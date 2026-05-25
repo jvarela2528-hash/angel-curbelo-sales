@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hogar Inteligente y Saludable | HH Distributors & Zendure</title>
+    <link rel="stylesheet" href="/src/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00e5ff; /* Bright Cyan */
+            --primary-dark: #00b8cc;
+            --accent: #111;
+        }
+        .hero-bg { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: -1; 
+            background-size: cover; 
+            background-position: center; 
+            background-image: url('/hh_distributors_bg.png');
+        }
+        .hero-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: -1; 
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.9)); 
+        }
+        .highlight-cyan { color: var(--primary); font-weight: 800; }
+        .option-btn:hover { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 15px rgba(0, 229, 255, 0.2); }
+    </style>
+</head>
+<body>
+    <div class="hero-bg"></div>
+    <div class="hero-overlay"></div>
+    
+    <div class="container">
+        <header class="header animate-fade-in">
+            <div class="logo">
+                Plan de <span class="highlight-cyan">Bienestar Total</span>:<br>
+                <span style="font-weight: 400; opacity: 0.9;">Angel Curbelo Sales</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="lead-card animate-slide-up" id="form-container" style="border-top: 4px solid var(--primary);">
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar" style="background: var(--primary);"></div>
+                </div>
+
+                <div id="multi-step-form">
+                    <!-- STEP 1 -->
+                    <div class="step active" id="step-1">
+                        <h1 class="title">Tu familia merece lo <span class="highlight-cyan">mejor</span></h1>
+                        <p class="subtitle">Agua pura, aire limpio y energía ininterrumpida en un solo plan.</p>
+                        <div class="question-box">
+                            <label class="label">¿Eres dueño de la propiedad?</label>
+                            <div class="options-grid">
+                                <button class="option-btn" onclick="setDueno('si'); nextStep(1, 2)">SÍ, SOY DUEÑO</button>
+                                <button class="option-btn" onclick="setDueno('no'); nextStep(1, 2)">NO, RENTO</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- STEP 2 -->
+                    <div class="step" id="step-2">
+                        <h2 class="title">¿En qué municipio se encuentra tu hogar?</h2>
+                        <div class="input-group">
+                            <input type="text" id="municipio" placeholder="Ej. San Juan, Dorado, Ponce..." class="input-text">
+                            <button class="btn btn-primary" onclick="nextStep(2, 3)">Continuar</button>
+                        </div>
+                    </div>
+                    <!-- STEP 3 -->
+                    <div class="step" id="step-3">
+                        <h2 class="title">¿Cuál es tu <span class="highlight-cyan">prioridad</span> hoy?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setPrioridad('Agua y Aire'); nextStep(3, 4)">Salud (Agua y Aire)</button>
+                            <button class="option-btn" onclick="setPrioridad('Respaldo'); nextStep(3, 5)">Seguridad (Baterías/Zendure)</button>
+                            <button class="option-btn" onclick="setPrioridad('Todo'); nextStep(3, 4)">Bienestar Total (Todo)</button>
+                        </div>
+                    </div>
+                    <!-- STEP 4 (SALUD) -->
+                    <div class="step" id="step-4">
+                        <h2 class="title">¿Alguien padece de <span class="highlight-cyan">asma</span> o alergias?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setAlergias('si'); checkNextFromSalud()">SÍ, ES UNA PREOCUPACIÓN</button>
+                            <button class="option-btn" onclick="setAlergias('no'); checkNextFromSalud()">NO, TODO BIEN</button>
+                        </div>
+                    </div>
+                    <!-- STEP 5 (ZENDURE) -->
+                    <div class="step" id="step-5">
+                        <h2 class="title">¿Qué equipos quieres <span class="highlight-cyan">proteger</span> de apagones?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setEquipos('Nevera/Medicos'); nextStep(5, 6)">Neveras y Médicos</button>
+                            <button class="option-btn" onclick="setEquipos('Aire Acondicionado'); nextStep(5, 6)">Aire Acondicionado</button>
+                            <button class="option-btn" onclick="setEquipos('Toda la casa'); nextStep(5, 6)">Toda la Residencia</button>
+                        </div>
+                    </div>
+                    <!-- STEP 6 (ZENDURE HORAS) -->
+                    <div class="step" id="step-6">
+                        <h2 class="title">¿Cuántas horas de <span class="highlight-cyan">respaldo</span> necesitas?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setHoras('4-12h'); nextStep(6, 7)">4 a 12 Horas</button>
+                            <button class="option-btn" onclick="setHoras('12-24h'); nextStep(6, 7)">12 a 24 Horas</button>
+                            <button class="option-btn" onclick="setHoras('Backup Ilimitado'); nextStep(6, 7)">Independencia Total</button>
+                        </div>
+                    </div>
+                    <!-- STEP 7 (CONTACTO) -->
+                    <div class="step" id="step-7">
+                        <h2 class="title">¡Diseñemos tu <span class="highlight-cyan">Plan de Bienestar</span>!</h2>
+                        <p class="subtitle">Angel Curbelo preparará una propuesta personalizada para ti.</p>
+                        <div class="input-group">
+                            <input type="text" id="full-name" placeholder="Tu nombre *" class="input-text" required>
+                            <input type="tel" id="phone" placeholder="Tu teléfono *" class="input-text" required>
+                            <input type="email" id="email" placeholder="Tu correo electrónico (Opcional)" class="input-text">
+                            <button class="btn btn-primary" id="submit-btn" style="background: var(--primary); color: black;">Obtener Propuesta Gratis</button>
+                        </div>
+                    </div>
+                    <!-- SUCCESS -->
+                    <div class="step" id="step-success">
+                        <div class="success-icon" style="color: var(--primary);">✨</div>
+                        <h2 class="title">¡Propuesta Solicitada!</h2>
+                        <p class="subtitle">Tu camino hacia un hogar saludable y seguro ha comenzado. Angel se contactará pronto.</p>
+                        <button class="btn btn-secondary" onclick="location.reload()">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script type="module" src="/src/hh-main.js"></script>
+</body>
+</html>

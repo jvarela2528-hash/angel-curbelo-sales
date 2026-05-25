@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salud y Limpieza Profunda | Rainbow PR</title>
+    <link rel="stylesheet" href="/src/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #007bff; /* Clean Blue for Rainbow */
+            --primary-dark: #0056b3;
+            --accent: #f8f9fa;
+        }
+        .hero-bg { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: -1; 
+            background-size: cover; 
+            background-position: center; 
+            transition: opacity 1s ease-in-out; 
+            background-color: #ffffff; 
+            background-image: url('/rainbow_bg.png');
+        }
+        .hero-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: -1; 
+            background: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.9)); 
+        }
+        .container { color: #333; }
+        .lead-card { background: rgba(255, 255, 255, 0.95); color: #333; border: 1px solid #eee; }
+        .title { color: #111; }
+        .subtitle { color: #555; }
+        .option-btn { border: 1px solid #ddd; color: #333; background: #fff; }
+        .option-btn:hover { border-color: var(--primary); color: var(--primary); background: #f0f7ff; }
+        .highlight { color: var(--primary); }
+        .label { color: #444; }
+        .input-text { background: #fdfdfd; border: 1px solid #ddd; color: #333; }
+        .logo { color: #111; }
+    </style>
+</head>
+<body>
+    <div class="hero-bg" id="dynamic-bg"></div>
+    <div class="hero-overlay"></div>
+    
+    <div class="container">
+        <header class="header animate-fade-in">
+            <div class="logo">
+                Consultor de <span class="highlight" style="font-weight: 800;">Salud en el Hogar</span>:<br>
+                <span style="font-weight: 400; opacity: 0.8;">Angel Curbelo Sales</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="lead-card animate-slide-up" id="form-container" style="border-top: 4px solid var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+                <div class="progress-container" style="background: #eee;">
+                    <div class="progress-bar" id="progress-bar" style="background: var(--primary);"></div>
+                </div>
+
+                <div id="multi-step-form">
+                    <!-- STEP 1 -->
+                    <div class="step active" id="step-1">
+                        <h1 class="title">¿Tu hogar es realmente <span class="highlight">saludable</span>?</h1>
+                        <p class="subtitle">Descubre cómo eliminar el polvo y alérgenos de raíz con tecnología de agua.</p>
+                        <div class="question-box">
+                            <label class="label">¿Tienes mascotas o alfombras en casa?</label>
+                            <div class="options-grid">
+                                <button class="option-btn" onclick="setHasPets('si'); nextStep(1, 2)">SÍ, TENGO</button>
+                                <button class="option-btn" onclick="setHasPets('no'); nextStep(1, 2)">NO TENGO</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- STEP 2 -->
+                    <div class="step" id="step-2">
+                        <h2 class="title">¿Alguien sufre de <span class="highlight">alergias</span> o asma?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setAlergias('si'); nextStep(2, 3)">SÍ, ES UN PROBLEMA</button>
+                            <button class="option-btn" onclick="setAlergias('no'); nextStep(2, 3)">NO POR AHORA</button>
+                        </div>
+                    </div>
+                    <!-- STEP 3 -->
+                    <div class="step" id="step-3">
+                        <h2 class="title">¿En qué municipio te encuentras?</h2>
+                        <div class="input-group">
+                            <input type="text" id="municipio" placeholder="Ej. Ponce, Caguas..." class="input-text">
+                            <button class="btn btn-primary" onclick="nextStep(3, 4)" style="background: var(--primary);">Siguiente</button>
+                        </div>
+                    </div>
+                    <!-- STEP 4 -->
+                    <div class="step" id="step-4">
+                        <h2 class="title">¡Mejora tu <span class="highlight">calidad de vida</span>!</h2>
+                        <p class="subtitle">Angel te mostrará cómo Rainbow puede transformar tu hogar.</p>
+                        <div class="input-group">
+                            <input type="text" id="full-name" placeholder="Nombre completo *" class="input-text" required>
+                            <input type="tel" id="phone" placeholder="Teléfono *" class="input-text" required>
+                            <input type="email" id="email" placeholder="Correo electrónico (Opcional)" class="input-text">
+                            <button class="btn btn-primary" id="submit-btn" style="background: var(--primary);">Solicitar Demostración Gratis</button>
+                        </div>
+                    </div>
+                    <!-- SUCCESS -->
+                    <div class="step" id="step-success">
+                        <div class="success-icon" style="color: var(--primary);">💧</div>
+                        <h2 class="title">¡Solicitud Recibida!</h2>
+                        <p class="subtitle">Pronto respirarás un aire más puro. Angel se contactará contigo para coordinar tu demo.</p>
+                        <button class="btn btn-secondary" onclick="location.reload()">Volver</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script type="module" src="/src/rainbow-main.js"></script>
+</body>
+</html>

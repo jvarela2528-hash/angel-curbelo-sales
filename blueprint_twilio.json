@@ -1,0 +1,43 @@
+{
+    "name": "Solar Leads - Twilio Dynamic",
+    "flow": [
+        {
+            "id": 1,
+            "module": "gateway:CustomWebhooks",
+            "version": 1,
+            "parameters": {
+                "hook": null
+            },
+            "mapper": {},
+            "metadata": {
+                "designer": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "id": 2,
+            "module": "twilio:SendWhatsAppMessage",
+            "version": 1,
+            "parameters": {
+                "accountSid": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            },
+            "mapper": {
+                "from": "+14155238886",
+                "to": "whatsapp:+1{{1.target_phone}}",
+                "body": "{{1.message}}"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 300,
+                    "y": 0
+                }
+            }
+        }
+    ],
+    "metadata": {
+        "instant": true,
+        "version": 1
+    }
+}

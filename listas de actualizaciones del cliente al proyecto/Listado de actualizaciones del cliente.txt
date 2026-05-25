@@ -1,0 +1,22 @@
+Listado de actualizaciones del cliente Angel Curbelo Sales en su CRM
+
+Crear una pagina de reclutamiento para las companies que el representa con un cuestionario para ello.
+Tener mas de un usuario en su CRM con log para saber que accion realizo cada usuario con timesptamp para tener mayor control.
+Cambiar los siguientes etiquetas de companies
+Solar
+Cambiar para sistema
+ Solar de PLacas y baterias
+Zendure
+Cambiar por Sistemas de BAckup para Casas y Apartamentos
+H&H DIstributor
+Cambiar por Sistema de Filtracion de Aguas y Bienestar
+Cuestionario Solar
+Añadir una pagina de segregacion al hacer click en solar y si es dueño
+PLacas Solas
+Sistema con BAterias
+Sistema solo Backup ( Segregar a BAckup para Casas y Apartamentos)
+Sistema Off Grip (Desconeccion total de luma)
+Sistema Medicion Neta (Credito en Factura)
+Añadir en area Creativa del CRM
+Poder Crear Publicidad en Facebook o Instagram o Tiktock con el boton mas informacion
+Que se le pueda crear una especie de landing page para recluatmiento y una para ventas o promociones de venta especial.

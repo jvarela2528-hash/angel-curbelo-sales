@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Respaldo Inteligente | Zendure PR</title>
+    <link rel="stylesheet" href="/src/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #a3ff00; /* Neon Green for Zendure */
+            --primary-dark: #82cc00;
+            --accent: #1a1a1a;
+        }
+        .hero-bg { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: -1; 
+            background-size: cover; 
+            background-position: center; 
+            transition: opacity 1s ease-in-out; 
+            background-color: #050505; 
+            background-image: url('/zendure_bg.png');
+        }
+        .hero-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: -1; 
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.95)); 
+        }
+        .highlight-company { color: var(--primary); font-weight: 800; }
+        .option-btn:hover { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 15px rgba(163, 255, 0, 0.3); }
+    </style>
+</head>
+<body>
+    <div class="hero-bg" id="dynamic-bg"></div>
+    <div class="hero-overlay"></div>
+    
+    <div class="container">
+        <header class="header animate-fade-in">
+            <div class="logo">
+                Especialista en <span class="highlight-company">Respaldo Energético</span>:<br>
+                <span style="font-weight: 400; opacity: 0.9;">Angel Curbelo Sales</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="lead-card animate-slide-up" id="form-container" style="border-top: 4px solid var(--primary);">
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar" style="background: var(--primary);"></div>
+                </div>
+
+                <div id="multi-step-form">
+                    <!-- STEP 1 -->
+                    <div class="step active" id="step-1">
+                        <h1 class="title">No te quedes a <span class="highlight">oscuras</span> nunca más</h1>
+                        <p class="subtitle">Sistemas de batería inteligentes Plug & Play para tu hogar.</p>
+                        <div class="question-box">
+                            <label class="label">¿Eres dueño de la propiedad?</label>
+                            <div class="options-grid">
+                                <button class="option-btn" onclick="setDueno('si'); nextStep(1, 2)">SÍ, SOY DUEÑO</button>
+                                <button class="option-btn" onclick="setDueno('no'); showRenterFlow()">NO, RENTO</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- STEP 2 -->
+                    <div class="step" id="step-2">
+                        <h2 class="title">¿En qué municipio necesitas respaldo?</h2>
+                        <div class="input-group">
+                            <input type="text" id="municipio" placeholder="Ej. Guaynabo, San Juan..." class="input-text">
+                            <button class="btn btn-primary" onclick="nextStep(2, 3)">Siguiente</button>
+                        </div>
+                    </div>
+                    <!-- STEP 3 -->
+                    <div class="step" id="step-3">
+                        <h2 class="title">¿Qué es lo más importante a <span class="highlight">proteger</span>?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setEquipos('Nevera/Alimentos'); nextStep(3, 4)">Nevera y Alimentos</button>
+                            <button class="option-btn" onclick="setEquipos('Aire Acondicionado'); nextStep(3, 4)">A/C e Iluminación</button>
+                            <button class="option-btn" onclick="setEquipos('Equipos Medicos'); nextStep(3, 4)">Equipos Médicos</button>
+                            <button class="option-btn" onclick="setEquipos('Todo'); nextStep(3, 4)">Toda la Casa</button>
+                        </div>
+                    </div>
+                    <!-- STEP 4 -->
+                    <div class="step" id="step-4">
+                        <h2 class="title">¿Cuántas horas de <span class="highlight">seguridad</span> buscas?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setHoras('4-8'); nextStep(4, 5)">4 a 8 Horas</button>
+                            <button class="option-btn" onclick="setHoras('8-16'); nextStep(4, 5)">8 a 16 Horas</button>
+                            <button class="option-btn" onclick="setHoras('24+'); nextStep(4, 5)">24 Horas o Más</button>
+                        </div>
+                    </div>
+                    <!-- STEP 5 -->
+                    <div class="step" id="step-5">
+                        <h2 class="title">¡Casi listo! <span class="highlight">Obtén tu cotización</span></h2>
+                        <p class="subtitle">Angel diseñará el sistema ideal para tu necesidad.</p>
+                        <div class="input-group">
+                            <input type="text" id="full-name" placeholder="Nombre completo *" class="input-text" required>
+                            <input type="tel" id="phone" placeholder="Teléfono *" class="input-text" required>
+                            <input type="email" id="email" placeholder="Correo electrónico (Opcional)" class="input-text">
+                            <button class="btn btn-primary" id="submit-btn" style="background: var(--primary); color: black;">Cotizar Mi Respaldo</button>
+                        </div>
+                    </div>
+                    <!-- STEP RENTER -->
+                    <div class="step" id="step-renter">
+                        <h2 class="title">¡Zendure es <span class="highlight">ideal para ti!</span></h2>
+                        <p class="subtitle">Nuestras baterías son portátiles. Si te mudas, te las llevas contigo. Sin instalaciones fijas obligatorias.</p>
+                        <div class="input-group">
+                            <input type="text" id="renter-municipio" placeholder="¿En qué pueblo vives?" class="input-text">
+                            <input type="text" id="renter-name" placeholder="Tu nombre *" class="input-text" required>
+                            <input type="tel" id="renter-phone" placeholder="Tu teléfono *" class="input-text" required>
+                            <input type="email" id="renter-email" placeholder="Tu correo electrónico (Opcional)" class="input-text">
+                            <button class="btn btn-primary" id="submit-renter-btn" style="background: var(--primary); color: black;">Deseo Más Información</button>
+                        </div>
+                    </div>
+                    <!-- SUCCESS -->
+                    <div class="step" id="step-success">
+                        <div class="success-icon" style="color: var(--primary);">🔋</div>
+                        <h2 class="title">¡Análisis en Curso!</h2>
+                        <p class="subtitle">Tu tranquilidad está cerca. Angel se comunicará contigo en breve.</p>
+                        <button class="btn btn-secondary" onclick="location.reload()">Volver</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script type="module" src="/src/zendure-main.js"></script>
+</body>
+</html>

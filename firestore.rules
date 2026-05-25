@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Funciones de validación
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isStaff() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'master', 'staff'];
+    }
+
+    // Reglas para Colección: Leads (Captura pública)
+    match /leads/{leadId} {
+      // Permite creación desde el cuestionario sin auth
+      allow create: if true; 
+      // Solo staff puede leer o modificar leads
+      allow read, update, delete: if isStaff();
+    }
+
+    // Reglas para Colección: Interactions
+    match /interactions/{interactionId} {
+      allow read, write: if isStaff();
+    }
+
+    // Reglas para Colección: Users (Perfiles y Roles)
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isStaff();
+    }
+
+    // Restricción específica para rutas de datos: Admin, Master, Papi
+    match /admin/{document=**} {
+      allow read, write: if isStaff();
+    }
+    
+    match /master/{document=**} {
+      allow read, write: if isStaff();
+    }
+    
+    match /papi/{document=**} {
+      allow read, write: if isStaff();
+    }
+
+    // Bloqueo por defecto para cualquier otra colección
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

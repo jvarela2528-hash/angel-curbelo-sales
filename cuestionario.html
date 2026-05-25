@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventas Solares | Angel Curbelo</title>
+    <link rel="stylesheet" href="/src/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        .hero-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background-size: cover; background-position: center; transition: opacity 1s ease-in-out; background-color: #0a0a0a; }
+        .hero-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: linear-gradient(rgba(10, 10, 10, 0.7), rgba(10, 10, 10, 0.95)); }
+        .logo { font-size: 1.1rem !important; line-height: 1.4; max-width: 80%; }
+        .highlight-company { color: var(--primary); font-weight: 800; }
+        .step { display: none; }
+        .step.active { display: block; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .service-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .service-btn { 
+            background: rgba(255, 255, 255, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 12px; 
+            padding: 20px 10px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .service-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--primary); transform: translateY(-5px); }
+        .service-icon { font-size: 2rem; }
+        .service-label { font-weight: 600; font-size: 0.8rem; color: #fff; }
+        
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 15px; }
+        @media (min-width: 600px) { .options-grid { grid-template-columns: 1fr 1fr; } }
+        .option-btn { padding: 12px; font-size: 0.9rem; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="hero-bg" id="dynamic-bg"></div>
+    <div class="hero-overlay"></div>
+    
+    <div class="container">
+        <header class="header animate-fade-in">
+            <div class="logo">
+                Representante <span class="highlight-company">Multiservicios</span>:<br>
+                <span style="font-weight: 400; opacity: 0.9;">Angel Curbelo Sales</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="lead-card animate-slide-up" id="form-container">
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+
+                <div id="multi-step-form">
+                    <!-- RAMA SOLAR -->
+                    <div class="step active" id="step-solar-1">
+                        <h2 class="title">¿Eres dueño de la propiedad?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('isOwner', 'Sí'); nextStep('solar-1', 'solar-type')">SÍ, SOY DUEÑO</button>
+                            <button class="option-btn" onclick="setField('isOwner', 'No'); nextStep('solar-1', 'solar-renter-warning')">NO, RENTO</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-solar-renter-warning">
+                        <div style="font-size: 3.5rem; text-align: center; margin-bottom: 1rem;">⚠️</div>
+                        <h2 class="title" style="color: #f59e0b;">Aviso para Propiedades en Alquiler</h2>
+                        <p class="subtitle" style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem; color: #e2e8f0; text-align: center;">
+                            Para instalar un sistema solar en una propiedad alquilada, <strong>es requisito indispensable contar con una autorización formal por escrito del dueño de la propiedad</strong>.
+                        </p>
+                        <div style="display: flex; justify-content: center;">
+                            <button class="btn btn-primary" onclick="nextStep('solar-renter-warning', 'solar-type')">Entendido, Continuar</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-solar-type">
+                        <h2 class="title">¿Qué tipo de propiedad es?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('propertyType', 'Casa'); nextStep('solar-type', 'solar-3')">🏡 CASA</button>
+                            <button class="option-btn" onclick="setField('propertyType', 'Apartamento'); nextStep('solar-type', 'solar-3')">🏢 APARTAMENTO</button>
+                            <button class="option-btn" onclick="setField('propertyType', 'Comercial'); nextStep('solar-type', 'solar-3')">🏪 COMERCIAL</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-solar-3">
+                        <h2 class="title">¿Cuál es tu factura promedio?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('consumo', '$100-200'); nextStep('solar-3', 'solar-4')">$100 - $200</button>
+                            <button class="option-btn" onclick="setField('consumo', '$201-350'); nextStep('solar-3', 'solar-4')">$201 - $350</button>
+                            <button class="option-btn" onclick="setField('consumo', '$351+'); nextStep('solar-3', 'solar-4')">$351+</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-solar-4">
+                        <h2 class="title">¿Material de tu techo?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('roofType', 'Concreto'); nextStep('solar-4', 'solar-5')">CONCRETO</button>
+                            <button class="option-btn" onclick="setField('roofType', 'Zinc'); nextStep('solar-4', 'solar-5')">ZINC</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-solar-5">
+                        <h2 class="title">¿Calificación de crédito?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('credit', '750+'); nextStep('solar-5', 'solar-6')">EXCELENTE (750+)</button>
+                            <button class="option-btn" onclick="setField('credit', '651-749'); nextStep('solar-5', 'solar-6')">BUENO (651 - 749)</button>
+                            <button class="option-btn" onclick="setField('credit', 'Menos de 650'); nextStep('solar-5', 'solar-6')">REGULAR (Menos de 650)</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-solar-6">
+                        <h2 class="title">¿Interés en batería?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('battery', 'Sí'); nextStep('solar-6', 'final-data')">SÍ, ME INTERESA</button>
+                            <button class="option-btn" onclick="setField('battery', 'No'); nextStep('solar-6', 'final-data')">NO POR AHORA</button>
+                        </div>
+                    </div>
+
+                    <!-- RAMAS HH / RAINBOW (Google Form) -->
+                    <div class="step" id="step-gen-1">
+                        <h2 class="title">¿Cuál es tu rango de <span class="highlight">edad</span>?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('ageRange', '25-44'); nextStep('gen-1', 'gen-2')">25 a 44 años</button>
+                            <button class="option-btn" onclick="setField('ageRange', '45-64'); nextStep('gen-1', 'gen-2')">45 a 64 años</button>
+                            <button class="option-btn" onclick="setField('ageRange', '65+'); nextStep('gen-1', 'gen-2')">65 años o más</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-gen-2">
+                        <h2 class="title">¿Cuál es tu <span class="highlight">estado civil</span>?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('civilStatus', 'Casado'); nextStep('gen-2', 'gen-3')">Casado(a)</button>
+                            <button class="option-btn" onclick="setField('civilStatus', 'Soltero/Convivo'); nextStep('gen-2', 'gen-3')">Soltero / Convivo</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-gen-3">
+                        <h2 class="title">¿Estado de la <span class="highlight">vivienda</span>?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('homeStatus', 'Dueño'); nextStep('gen-3', 'gen-4')">SÍ, SOY DUEÑO</button>
+                            <button class="option-btn" onclick="setField('homeStatus', 'Alquilado'); nextStep('gen-3', 'gen-4')">ALQUILADO</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-gen-4">
+                        <h2 class="title">¿Recibe alguna <span class="highlight">ayuda</span>?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('helpType', 'Tarjeta Familia/Vivienda'); nextStep('gen-4', 'gen-5')">Tarjeta Familia / Plan 8</button>
+                            <button class="option-btn" onclick="setField('helpType', 'Ninguna'); nextStep('gen-4', 'gen-5')">NINGUNA</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-gen-5">
+                        <h2 class="title">¿Fuente de <span class="highlight">ingreso</span>?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('incomeSource', 'Trabajo/Gobierno'); handleGenBranch()">Trabajo (Gob/Privado)</button>
+                            <button class="option-btn" onclick="setField('incomeSource', 'Retirado/Incapacidad'); handleGenBranch()">Retirado / Incapacidad</button>
+                        </div>
+                    </div>
+
+                    <div class="step" id="step-rb-1">
+                        <h2 class="title">¿Condiciones de <span class="highlight">salud</span>?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('healthCondition', 'SÍ'); nextStep('rb-1', 'rb-2')">SÍ (Asma/Alergias)</button>
+                            <button class="option-btn" onclick="setField('healthCondition', 'NO'); nextStep('rb-1', 'rb-2')">NO, TODO BIEN</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-rb-2">
+                        <h2 class="title">¿Problemas de <span class="highlight">polvo</span>?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('dustProblem', 'SÍ'); nextStep('rb-2', 'gift-1')">SÍ, CONSTANTEMENTE</button>
+                            <button class="option-btn" onclick="setField('dustProblem', 'NO'); nextStep('rb-2', 'gift-1')">NO TENGO PROBLEMA</button>
+                        </div>
+                    </div>
+
+                    <div class="step" id="step-hh-1">
+                        <h2 class="title">¿Opinión sobre el agua <span class="highlight">AAA</span>?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('waterOpinion', 'Mala'); nextStep('hh-1', 'hh-2')">MALA / INUTILIZABLE</button>
+                            <button class="option-btn" onclick="setField('waterOpinion', 'Regular'); nextStep('hh-1', 'hh-2')">REGULAR</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-hh-2">
+                        <h2 class="title">¿Qué agua consume para <span class="highlight">beber</span>?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('waterSource', 'Embotellada'); nextStep('hh-2', 'gift-1')">AGUA EMBOTELLADA</button>
+                            <button class="option-btn" onclick="setField('waterSource', 'Purificador'); nextStep('hh-2', 'gift-1')">PURIFICADOR</button>
+                        </div>
+                    </div>
+
+                    <div class="step" id="step-gift-1">
+                        <h2 class="title">¿Día para tu <span class="highlight">regalo</span>?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('giftDay', 'Lunes-Jueves'); nextStep('gift-1', 'gift-2')">Lunes a Jueves</button>
+                            <button class="option-btn" onclick="setField('giftDay', 'Viernes-Domingo'); nextStep('gift-1', 'gift-2')">Viernes a Domingo</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-gift-2">
+                        <h2 class="title">¿En qué <span class="highlight">horario</span>?</h2>
+                        <div class="options-grid">
+                            <button class="option-btn" onclick="setField('giftTime', '10am-2pm'); nextStep('gift-2', 'final-data')">Mañana (10am-2pm)</button>
+                            <button class="option-btn" onclick="setField('giftTime', '4pm+'); nextStep('gift-2', 'final-data')">Tarde (4pm en adelante)</button>
+                        </div>
+                    </div>
+
+                    <div class="step" id="step-final-data">
+                        <h2 class="title">¡Último paso! <span class="highlight">Dinos quién eres</span></h2>
+                        <form id="questionnaire-form" class="input-group">
+                            <input type="text" id="master-name" placeholder="Nombre y Apellido *" class="input-text" required>
+                            <input type="tel" id="master-phone" placeholder="Teléfono *" class="input-text" required>
+                            <input type="email" id="master-email" placeholder="Correo Electrónico (Opcional)" class="input-text">
+                            <button type="submit" class="btn btn-primary" id="btn-submit-all" style="background: var(--primary); color: black; font-weight: bold; font-size: 1.1rem; padding: 18px;">QUIERO MI COTIZACIÓN</button>
+                        </form>
+                    </div>
+
+                    <div class="step" id="step-success">
+                        <div class="success-icon">✅</div>
+                        <h2 class="title">¡Mensaje Recibido!</h2>
+                        <p class="subtitle">Angel Curbelo Sales se comunicará contigo pronto.</p>
+                        <button class="btn btn-secondary" onclick="location.reload()">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { db } from '/src/firebase-config.js';
+        import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+
+        let currentData = { service: 'solar' };
+        setTimeout(() => updateProgress(10), 100);
+
+        window.selectService = (s) => {
+            currentData.service = s;
+            document.getElementById('step-0').classList.remove('active');
+            if (s === 'solar') document.getElementById('step-solar-1').classList.add('active');
+            else document.getElementById('step-gen-1').classList.add('active');
+            updateProgress(10);
+        };
+
+        window.nextStep = (cur, next) => {
+            document.getElementById(`step-${cur}`).classList.remove('active');
+            document.getElementById(`step-${next}`).classList.add('active');
+            updateProgress(50);
+        };
+
+        window.handleGenBranch = () => {
+            document.getElementById('step-gen-5').classList.remove('active');
+            if (currentData.service === 'rainbow') document.getElementById('step-rb-1').classList.add('active');
+            else document.getElementById('step-hh-1').classList.add('active');
+        };
+
+        window.setField = (f, v) => { currentData[f] = v; };
+
+        function determinarCategoria(service) {
+            if (service === 'solar') return 'solar';
+            if (service === 'rainbow') return 'rainbow-pr';
+            if (service === 'hh') return 'hh-integral';
+            if (service === 'zendure') return 'zendure-pr';
+            return service || 'solar';
+        }
+
+        function ejecutarRedireccion(category) {
+            if (category === 'solar' || category === 'direct') {
+                window.location.href = 'https://tuplantaprsolar.com/quiero-mi-cotizacion';
+            } else {
+                document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+                document.getElementById('step-success').classList.add('active');
+                updateProgress(100);
+            }
+        }
+
+        async function handleSubmitFinal(event) {
+            // 1. Detener la redirección nativa inmediata del navegador
+            event.preventDefault(); 
+            
+            const form = event.target;
+            const btn = form.querySelector('#btn-submit-all');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Enviando...';
+            }
+
+            const datosFinales = {
+                name: form.querySelector('#master-name')?.value || form.querySelector('#full-name')?.value,
+                phone: form.querySelector('#master-phone')?.value || form.querySelector('#phone')?.value,
+                email: form.querySelector('#master-email')?.value || form.querySelector('#email')?.value,
+                municipio: form.querySelector('#master-town')?.value || form.querySelector('#municipio')?.value || "No requerido",
+                direccion: form.querySelector('#master-address')?.value || "No requerida"
+            };
+
+            // Score basado en crédito (Cliente: <650 Cold, 651-749 Warm, 750+ Hot)
+            let score = 50; 
+            let scoreLabel = '☀️ Warm';
+            if (currentData.credit === '750+') { score = 90; scoreLabel = '🔥 Hot'; }
+            else if (currentData.credit === '651-749') { score = 65; scoreLabel = '☀️ Warm'; }
+            else if (currentData.credit === 'Menos de 650') { score = 30; scoreLabel = '❄️ Cold'; }
+
+            // Lógica de Cualificación e Inyección de Estatus
+            let status = "nuevo";
+            let razon_descarte = "";
+
+            const isSolar = (currentData.service === 'solar');
+            const isOwner = isSolar ? currentData.isOwner : currentData.homeStatus;
+            const consumo = currentData.consumo;
+            const credit = currentData.credit;
+            
+            console.log("Valores capturados:", { isOwner, consumo, credit });
+
+            if (isSolar && currentData.isOwner === 'No') {
+                status = "no_cualificado";
+                razon_descarte = "No cualificado por: No es dueño de propiedad (Solar)";
+            } else if (!isSolar && currentData.homeStatus === 'Alquilado') {
+                status = "no_cualificado";
+                razon_descarte = "No cualificado por: Alquilado (No es dueño)";
+            } else if (isSolar && currentData.consumo === '$100-200') {
+                status = "no_cualificado";
+                razon_descarte = "No cualificado por: Consumo energético bajo ($100-200)";
+            } else if (isSolar && currentData.credit === 'Menos de 650') {
+                status = "no_cualificado";
+                razon_descarte = "No cualificado por: Crédito regular (Menos de 650)";
+            }
+
+            // 2. Ejecutar el envío a Firestore y ESPERAR confirmación
+            try {
+                const leadData = {
+                    ...currentData,
+                    ...datosFinales,
+                    score,
+                    scoreLabel,
+                    category: determinarCategoria(currentData.service),
+                    status,
+                    razon_descarte,
+                    createdAt: serverTimestamp(),
+                    fuente: "Cuestionario Web",
+                    agente_asignado: "Angel Curbelo Sales"
+                };
+
+                // El 'await' congela la redirección por un milisegundo hasta que el dato toque Firestore
+                const docRef = await addDoc(collection(db, 'leads'), leadData);
+                console.log("🚀 Lead asegurado en CRM con ID: ", docRef.id);
+
+                // 3. ¡Éxito! Ahora sí, redirigir simultáneamente a la velocidad del rayo
+                ejecutarRedireccion(leadData.category);
+
+            } catch (error) {
+                console.error("Error crítico al guardar en el CRM: ", error);
+                // Respaldo: Si Firestore falla, redirigimos comoquiera para no perder la venta del cliente
+                ejecutarRedireccion(determinarCategoria(currentData.service));
+            }
+        }
+
+        document.getElementById('questionnaire-form')?.addEventListener('submit', handleSubmitFinal);
+        const imgs = ['/ads/fb_1.png', '/ads/fb_2.png', '/ads/fb_3.png'];
+        document.getElementById('dynamic-bg').style.backgroundImage = `url('${imgs[Math.floor(Math.random()*imgs.length)]}')`;
+        function updateProgress(p) { const bar = document.getElementById('progress-bar'); if (bar) bar.style.width = `${p}%`; }
+    </script>
+</body>
+</html>

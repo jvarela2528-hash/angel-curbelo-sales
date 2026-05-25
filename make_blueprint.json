@@ -1,0 +1,54 @@
+{
+    "name": "Solar Alerts Bridge",
+    "flow": [
+        {
+            "id": 1,
+            "module": "gateway:CustomWebhooks",
+            "version": 1,
+            "parameters": {
+                "hook": null
+            },
+            "mapper": {},
+            "metadata": {
+                "designer": {
+                    "x": 0,
+                    "y": 0
+                }
+            }
+        },
+        {
+            "id": 2,
+            "module": "http:ActionSendRequest",
+            "version": 3,
+            "parameters": {
+                "url": "https://api.callmebot.com/whatsapp.php",
+                "method": "get",
+                "qs": [
+                    {
+                        "name": "phone",
+                        "value": "{{1.target_phone}}"
+                    },
+                    {
+                        "name": "text",
+                        "value": "{{1.message}}"
+                    },
+                    {
+                        "name": "apikey",
+                        "value": "REEMPLAZAR_POR_TU_API_KEY"
+                    }
+                ]
+            },
+            "mapper": {},
+            "metadata": {
+                "designer": {
+                    "x": 300,
+                    "y": 0
+                }
+            }
+        }
+    ],
+    "metadata": {
+        "instant": true,
+        "version": 1
+    }
+}
