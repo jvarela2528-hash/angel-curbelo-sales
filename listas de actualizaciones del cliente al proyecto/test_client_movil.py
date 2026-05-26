@@ -1,4 +1,14 @@
+import sys
 import requests
+
+# Asegurar codificación UTF-8 en stdout/stderr para prevenir errores de UnicodeEncodeError con emojis en Windows
+if sys.platform.startswith("win"):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 
 # URL local o de staging donde estará corriendo tu API de BoriChef
 API_URL = "http://127.0.0.1:8000/api/v1/carrito/llenar"
@@ -14,7 +24,7 @@ def simular_boton_comprar_movil():
     
     # 2. Datos capturados en los inputs nativos de la pantalla móvil
     payload = {
-        "supermercado": "SuperMax",  # <-- ¡Coma añadida aquí!
+        "supermercado": "SuperMax",  # <-- ¡Cambiado a SuperMax!
         "receta_texto": lista_ingredientes,
         "usuario": "alexandervarela1@yahoo.com", 
         "password": "Jvarela2528"          
@@ -22,7 +32,7 @@ def simular_boton_comprar_movil():
     
     print(f"🚀 Enviando payload de forma segura al servidor...")
     try:
-        response = requests.post(API_URL, json=payload, timeout=60)
+        response = requests.post(API_URL, json=payload, timeout=120)
         if response.status_code == 200:
             print("🎉 Respuesta del Servidor:", response.json())
         else:
