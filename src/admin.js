@@ -1,6 +1,6 @@
 import './style.css'
 import { db, functions, auth } from './firebase-config'
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, limit, getDoc } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, limit, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
 import { CLIENTS } from './clients-config'
@@ -100,6 +100,22 @@ let currentAdFilter = 'all'
 let isFirstLoad = true
 let currentUser = null; // Client config object
 let activeContext = 'all'; // For master to switch views
+window.isLoginEventInProgress = false;
+
+async function saveAuditLog(action) {
+    if (!auth.currentUser) return;
+    try {
+        await addDoc(collection(db, 'logs'), {
+            userId: auth.currentUser.uid,
+            userName: currentUser ? currentUser.name : (auth.currentUser.email || 'Usuario'),
+            action: action,
+            timestamp: serverTimestamp()
+        });
+    } catch (e) {
+        console.error("Error al registrar log de auditoría:", e);
+    }
+}
+
 let currentAICommLead = null; // Para el modal de comunicación IA
 const LANDING_URL = window.location.origin;
 window.realCopies = { fb: '', tiktok: '' };
@@ -203,15 +219,15 @@ function renderStats() {
     document.getElementById('stat-conv').innerText = `${conversion}%`;
 
     // Data for Charts
-    const productCounts = { 'Solar': 0, 'Bienestar': 0, 'Rainbow': 0, 'Zendure': 0 };
+    const productCounts = { 'Solar de Placas y Baterías': 0, 'Sistema de Filtración de Aguas y Bienestar': 0, 'Rainbow': 0, 'Sistemas de Backup para Casas y Apartamentos': 0 };
     const statusCounts = { 'Nuevo': 0, 'Seguimiento': 0, 'Venta': 0, 'Otros': 0 };
 
     filteredLeads.forEach(l => {
         // Product Distribution
-        if (l.source === 'direct' || !l.source) productCounts['Solar']++;
-        else if (l.source === 'hh-integral') productCounts['Bienestar']++;
+        if (l.source === 'direct' || !l.source) productCounts['Solar de Placas y Baterías']++;
+        else if (l.source === 'hh-integral') productCounts['Sistema de Filtración de Aguas y Bienestar']++;
         else if (l.source === 'rainbow-pr') productCounts['Rainbow']++;
-        else if (l.source === 'zendure-pr') productCounts['Zendure']++;
+        else if (l.source === 'zendure-pr') productCounts['Sistemas de Backup para Casas y Apartamentos']++;
 
         // Status Funnel
         if (l.status === 'Nuevo') statusCounts['Nuevo']++;
@@ -426,10 +442,21 @@ function renderLeads() {
     Object.keys(countMap).forEach(key => { if (counts[key]) counts[key].innerText = countMap[key] });
 
     document.querySelectorAll('.status-select').forEach(s => s.addEventListener('change', async (e) => {
-        await updateDoc(doc(db, 'leads', e.target.getAttribute('data-id')), { status: e.target.value })
+        const leadId = e.target.getAttribute('data-id');
+        const newStatus = e.target.value;
+        const lead = leadsCache.find(l => l.id === leadId);
+        const leadName = lead ? lead.name : 'Desconocido';
+        await updateDoc(doc(db, 'leads', leadId), { status: newStatus });
+        await saveAuditLog(`Cambió estatus de Lead ${leadName} a ${newStatus}`);
     }));
     document.querySelectorAll('.btn-delete-lead').forEach(b => b.addEventListener('click', async () => {
-        if(confirm('¿Eliminar prospecto?')) await deleteDoc(doc(db, 'leads', b.getAttribute('data-id')))
+        const leadId = b.getAttribute('data-id');
+        const lead = leadsCache.find(l => l.id === leadId);
+        const leadName = lead ? lead.name : 'Desconocido';
+        if (confirm('¿Eliminar prospecto?')) {
+            await deleteDoc(doc(db, 'leads', leadId));
+            await saveAuditLog(`Eliminó Lead ${leadName}`);
+        }
     }));
     document.querySelectorAll('.btn-email-lead').forEach(b => b.addEventListener('click', async () => {
         const id = b.getAttribute('data-id');
@@ -449,9 +476,9 @@ function renderLeads() {
             }
         }
         const srv = lead.service ? lead.service.toUpperCase() : 'SOLAR';
-        const srvName = srv === 'SOLAR' ? 'Energía Solar' : srv === 'ZENDURE' ? 'Baterías Zendure' : srv === 'RAINBOW' ? 'Sistema Rainbow' : 'Filtros de Agua H&H';
+        const srvName = srv === 'SOLAR' ? 'Solar de Placas y Baterías' : srv === 'ZENDURE' ? 'Sistemas de Backup para Casas y Apartamentos' : srv === 'RAINBOW' ? 'Sistema Rainbow' : 'Sistema de Filtración de Aguas y Bienestar';
         const subject = encodeURIComponent(`Orientación sobre ${srvName} - Angel Curbelo Sales`);
-        const body = encodeURIComponent(`Hola ${lead.name},\n\nGracias por su interés en ${srvName}. Me comunico con el fin de ofrecerle información detallada y responder sus dudas para coordinar una orientación personalizada.\n\nAtentamente,\nAngel Curbelo\nTuPlanta.com`);
+        const body = encodeURIComponent(`Hola ${lead.name},\n\nGracias por su interés en ${srvName}.\nMe comunico con el fin de ofrecerle información detallada y responder sus dudas para coordinar una orientación personalizada.\n\nAtentamente,\nAngel Curbelo\nTuPlanta.com`);
         window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
     }));
     document.querySelectorAll('.btn-ai-comm').forEach(b => b.addEventListener('click', () => {
@@ -564,6 +591,7 @@ loginBtn?.addEventListener('click', async () => {
     loginBtn.innerText = "Iniciando sesión...";
     
     try {
+        window.isLoginEventInProgress = true;
         await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
         console.error("Login error:", error);
@@ -627,6 +655,10 @@ document.querySelectorAll('.nav-item, .nav-sub-item').forEach(item => {
             window.location.hash = 'entrada-manual';
         } else if (sectionId === 'qr-section') {
             window.location.hash = 'qr';
+        } else if (sectionId === 'ad-generator-section') {
+            window.location.hash = 'generador-anuncios';
+        } else if (sectionId === 'users-section') {
+            window.location.hash = 'usuarios';
         }
 
         // UI handling is now handled by syncWithHash via hashchange event
@@ -642,6 +674,7 @@ function showPanel() {
     
     loadLeads(); 
     loadArchive(); 
+    loadLandings();
     initQRCode();
     syncWithHash(); 
     checkAIBudget();
@@ -658,6 +691,17 @@ function applyRoleUI() {
             item.style.display = 'none';
         }
     });
+
+    // Mostrar panel de usuarios solo para admin/master
+    const navUsers = document.getElementById('nav-users');
+    if (navUsers) {
+        const userRole = currentUser.role;
+        if (userRole === 'master' || currentUser.sections.includes('users')) {
+            navUsers.style.display = 'flex';
+        } else {
+            navUsers.style.display = 'none';
+        }
+    }
 
     // Add Context Switcher for Master
     if (currentUser.role === 'master') {
@@ -811,7 +855,9 @@ function syncWithHash() {
         'archivo': { section: 'archive-section' },
         'entrada-manual': { section: 'manual-entry-section' },
         'qr': { section: 'qr-section' },
-        'codigo-qr': { section: 'qr-section' }
+        'codigo-qr': { section: 'qr-section' },
+        'generador-anuncios': { section: 'ad-generator-section' },
+        'usuarios': { section: 'users-section' }
     };
 
     const config = hashMaps[hash];
@@ -839,13 +885,16 @@ function syncWithHash() {
         if (config.section === 'stats-section') {
             renderStats();
         }
+        if (config.section === 'users-section') {
+            loadUsers();
+        }
         if (config.filter) {
             currentFilter = config.filter;
             renderLeads();
         }
         if (config.adFilter) {
             currentAdFilter = config.adFilter;
-            const segmentNames = { 'all': 'Global', 'direct': 'Solar', 'hh-integral': 'Bienestar (HH)', 'rainbow-pr': 'Rainbow', 'zendure-pr': 'Zendure' };
+            const segmentNames = { 'all': 'Global', 'direct': 'Solar de Placas y Baterías', 'hh-integral': 'Sistema de Filtración de Aguas y Bienestar', 'rainbow-pr': 'Rainbow', 'zendure-pr': 'Sistemas de Backup para Casas y Apartamentos' };
             const titleEl = document.getElementById('marketing-title');
             if (titleEl) titleEl.innerHTML = `Generador de Campañas <span style="color:var(--primary); font-size:1rem; margin-left:15px; opacity:0.7;">• ${segmentNames[currentAdFilter] || 'Segmento'}</span>`;
             
@@ -955,10 +1004,10 @@ window.generateIdea = async (platform) => {
 
 window.generateAIIdea = async (platform) => {
     const cat = currentAdFilter === 'all' ? 'direct' : currentAdFilter;
-    const segmentNames = { 'direct': 'Energía Solar', 'hh-integral': 'H&H Integral', 'rainbow-pr': 'Aspiradoras Rainbow', 'zendure-pr': 'Baterías Zendure' };
-    const segmentLabels = { 'direct': 'Energía Solar', 'hh-integral': 'H&H (Aqua Viva, Water Tree)', 'rainbow-pr': 'Rainbow', 'zendure-pr': 'Zendure' };
-    const segmentName = segmentNames[cat] || 'Energía Solar';
-    const segmentLabel = segmentLabels[cat] || 'Energía Solar';
+    const segmentNames = { 'direct': 'Solar de Placas y Baterías', 'hh-integral': 'Sistema de Filtración de Aguas y Bienestar', 'rainbow-pr': 'Aspiradoras Rainbow', 'zendure-pr': 'Sistemas de Backup para Casas y Apartamentos' };
+    const segmentLabels = { 'direct': 'Solar de Placas y Baterías', 'hh-integral': 'Sistema de Filtración de Aguas y Bienestar (Aqua Viva, Water Tree)', 'rainbow-pr': 'Rainbow', 'zendure-pr': 'Sistemas de Backup para Casas y Apartamentos' };
+    const segmentName = segmentNames[cat] || 'Solar de Placas y Baterías';
+    const segmentLabel = segmentLabels[cat] || 'Solar de Placas y Baterías';
     
     const userPrompt = window.prompt(`¿Sobre qué quieres el anuncio de ${segmentLabel}? (Ej: Promoción especial, Beneficios del producto, Oferta limitada)`);
     if (!userPrompt) return;
@@ -1320,16 +1369,56 @@ onAuthStateChanged(auth, async (user) => {
                 const role = userData.role;
                 const clientId = userData.clientId || 'angel';
                 
-                if (['admin', 'master', 'staff'].includes(role)) {
-                    currentUser = CLIENTS[clientId] || {
-                        id: clientId,
-                        name: userData.name || user.email,
-                        role: role === 'master' ? 'master' : 'client',
-                        allowedSources: role === 'master' ? 'all' : ['direct', 'cuestionario-web'],
-                        sections: role === 'master' ? ['leads', 'marketing', 'stats', 'archive', 'manual-entry', 'qr'] : ['leads']
-                    };
+                if (['admin', 'master', 'staff', 'vendedor'].includes(role)) {
+                    const isAdminOrMaster = (role === 'master' || role === 'admin');
+                    const baseClient = CLIENTS[clientId];
+                    currentUser = baseClient 
+                        ? {
+                            ...baseClient,
+                            // Asegurar que el rol real de Firestore determina las secciones
+                            role: isAdminOrMaster ? 'master' : 'client',
+                            sections: isAdminOrMaster
+                                ? ['leads', 'marketing', 'stats', 'archive', 'manual-entry', 'qr', 'users', 'ad-generator']
+                                : (baseClient.sections || ['leads'])
+                        }
+                        : {
+                            id: clientId,
+                            name: userData.name || user.email,
+                            role: isAdminOrMaster ? 'master' : 'client',
+                            allowedSources: isAdminOrMaster ? 'all' : ['direct', 'cuestionario-web'],
+                            sections: isAdminOrMaster
+                                ? ['leads', 'marketing', 'stats', 'archive', 'manual-entry', 'qr', 'users', 'ad-generator']
+                                : ['leads']
+                        };
                     activeContext = currentUser.role === 'master' ? 'all' : currentUser.id;
+                    
+                    // Actualizar el perfil del usuario logueado en la interfaz
+                    const displayNameEl = document.getElementById('user-display-name');
+                    const displayRoleEl = document.getElementById('user-display-role');
+                    const initialsEl = document.getElementById('user-avatar-initials');
+                    
+                    if (displayNameEl) displayNameEl.innerText = userData.name || user.email;
+                    if (displayRoleEl) displayRoleEl.innerText = role === 'admin' ? 'Administrador' : role === 'master' ? 'Control Maestro' : 'Vendedor';
+                    if (initialsEl) {
+                        const nameParts = (userData.name || user.email || 'U').split(' ').filter(Boolean);
+                        const initials = nameParts.map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                        initialsEl.innerText = initials || 'U';
+                    }
+                    
+                    // Actualizar saludo en mobile header
+                    const mobileGreeting = document.getElementById('mobile-user-greeting');
+                    if (mobileGreeting) {
+                        const firstName = (userData.name || user.email || 'Usuario').split(' ')[0];
+                        mobileGreeting.innerText = `Hola, ${firstName}`;
+                    }
+                    
                     showPanel();
+
+                    // Registrar inicio de sesión en logs de auditoría
+                    if (window.isLoginEventInProgress) {
+                        window.isLoginEventInProgress = false;
+                        await saveAuditLog("Inició sesión");
+                    }
                 } else {
                     showLoginError("Acceso no autorizado. Tu cuenta no tiene permisos administrativos.");
                     await signOut(auth);
@@ -1348,6 +1437,14 @@ onAuthStateChanged(auth, async (user) => {
         activeContext = 'all';
         loginScreen.style.display = 'flex';
         adminPanel.style.display = 'none';
+        
+        // Limpiar información de usuario
+        const displayNameEl = document.getElementById('user-display-name');
+        const displayRoleEl = document.getElementById('user-display-role');
+        const initialsEl = document.getElementById('user-avatar-initials');
+        if (displayNameEl) displayNameEl.innerText = 'Cargando...';
+        if (displayRoleEl) displayRoleEl.innerText = 'Vendedor';
+        if (initialsEl) initialsEl.innerText = 'U';
         
         // Clear inputs
         if (adminEmailInput) adminEmailInput.value = '';
@@ -1665,6 +1762,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupAICommModal();
     setupTranscriptModal();
     setupAppointmentModal();
+    setupCreateUserModal();
 });
 
 // ====== IA ASISTENTE DE COMUNICACIÓN MODAL LOGIC ======
@@ -2210,4 +2308,428 @@ function generateAndDownloadFlyer(url, area) {
     });
 }
 
+// ====== GESTIÓN DE LANDING PAGES (CRUD) & GENERADOR DE COPYS IA ======
 
+let landingsCache = [];
+
+function loadLandings() {
+    const listBody = document.getElementById('landings-list-body');
+    if (!listBody) return;
+
+    onSnapshot(query(collection(db, 'landings_config')), (snapshot) => {
+        listBody.innerHTML = '';
+        landingsCache = [];
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const id = docSnap.id;
+            landingsCache.push({ id, ...data });
+
+            const card = document.createElement('div');
+            card.className = 'ad-card';
+            card.style.borderLeft = `4px solid ${data.color_enfoque || '#d4af37'}`;
+            
+            const promoUrl = `${window.location.origin}/promo.html?id=${id}`;
+
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <h4 style="font-size:1rem; font-weight:700; color:#fff;">${data.titulo || 'Sin título'}</h4>
+                        <small style="color:#888;">ID: ${id}</small>
+                    </div>
+                    <button class="btn-delete-landing" data-id="${id}" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:1.1rem;" title="Eliminar Landing">🗑️</button>
+                </div>
+                <p style="font-size:0.8rem; color:#ccc; margin: 0.5rem 0;">${data.subtitulo || ''}</p>
+                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:0.8rem; border-radius:10px; font-size:0.8rem; display:flex; flex-direction:column; gap:4px;">
+                    <div><span style="color:#d4af37; font-weight:bold;">Oferta:</span> ${data.oferta_especial || ''}</div>
+                    <div><span style="color:#d4af37; font-weight:bold;">Destino:</span> ${data.formulario_destino || ''}</div>
+                </div>
+                <div class="ad-footer" style="margin-top:1rem; display:flex; gap:0.5rem;">
+                    <button class="btn-mini btn-copy-landing-link primary" data-url="${promoUrl}" style="flex:1; justify-content:center; padding: 8px;">🔗 Copiar Enlace</button>
+                    <a href="${promoUrl}" target="_blank" class="btn-mini" style="flex:1; justify-content:center; text-decoration:none; display:flex; align-items:center; gap:4px; padding: 8px;">🌐 Visitar</a>
+                </div>
+            `;
+            listBody.appendChild(card);
+        });
+
+        // Event listeners for delete
+        document.querySelectorAll('.btn-delete-landing').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                if (confirm(`¿Estás seguro de que deseas eliminar la Landing Page "${id}"?`)) {
+                    try {
+                        await deleteDoc(doc(db, 'landings_config', id));
+                        await saveAuditLog(`Eliminó Landing Page: ${id}`);
+                        showVisualAlert("Landing Page eliminada con éxito", "Eliminado");
+                    } catch (err) {
+                        alert("Error al eliminar landing: " + err.message);
+                    }
+                }
+            });
+        });
+
+        // Event listeners for copy link
+        document.querySelectorAll('.btn-copy-landing-link').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const url = btn.getAttribute('data-url');
+                navigator.clipboard.writeText(url).then(() => {
+                    showVisualAlert("Enlace copiado al portapapeles", "Copiado");
+                }).catch(() => {
+                    alert("No se pudo copiar el enlace.");
+                });
+            });
+        });
+    });
+}
+
+// Configurar botón guardar landing
+document.getElementById('btn-save-landing')?.addEventListener('click', async () => {
+    const idInput = document.getElementById('landing-id');
+    const titleInput = document.getElementById('landing-title');
+    const subtitleInput = document.getElementById('landing-subtitle');
+    const promoInput = document.getElementById('landing-promo');
+    const colorInput = document.getElementById('landing-color');
+    const formInput = document.getElementById('landing-form');
+
+    const id = idInput?.value.trim().replace(/\s+/g, '_').toUpperCase();
+    const titulo = titleInput?.value.trim();
+    const subtitulo = subtitleInput?.value.trim();
+    const oferta_especial = promoInput?.value.trim();
+    const color_enfoque = colorInput?.value.trim() || '#d4af37';
+    const formulario_destino = formInput?.value.trim() || '/cuestionario.html';
+
+    if (!id || !titulo || !subtitulo || !oferta_especial) {
+        alert("Por favor, completa todos los campos marcados con (*)");
+        return;
+    }
+
+    const saveBtn = document.getElementById('btn-save-landing');
+    saveBtn.disabled = true;
+    saveBtn.innerText = "Guardando...";
+
+    try {
+        await setDoc(doc(db, 'landings_config', id), {
+            titulo,
+            subtitulo,
+            oferta_especial,
+            color_enfoque,
+            formulario_destino,
+            createdAt: serverTimestamp()
+        });
+
+        await saveAuditLog(`Creó/Modificó Landing Page: ${id} — ${titulo}`);
+        showVisualAlert(`Landing Page "${id}" configurada correctamente`, "Guardado");
+        
+        // Limpiar inputs
+        if (idInput) idInput.value = '';
+        if (titleInput) titleInput.value = '';
+        if (subtitleInput) subtitleInput.value = '';
+        if (promoInput) promoInput.value = '';
+    } catch (err) {
+        console.error("Error al guardar landing:", err);
+        alert("Error al guardar landing page: " + err.message);
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerText = "💾 Guardar Landing en Firestore";
+    }
+});
+
+// Configurar botón de generar copys IA
+document.getElementById('btn-generate-marketing-copy')?.addEventListener('click', async () => {
+    const platform = document.getElementById('ai-copy-platform')?.value;
+    const product = document.getElementById('ai-copy-product')?.value;
+    const angle = document.getElementById('ai-copy-angle')?.value;
+
+    if (!platform || !product || !angle) return;
+
+    const btn = document.getElementById('btn-generate-marketing-copy');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳ Generando Copys con IA...</span>';
+
+    const container = document.getElementById('generated-copies-container');
+    const grid = document.getElementById('ai-copies-variations-grid');
+
+    if (container) container.style.display = 'none';
+
+    try {
+        const generateMarketingCopyFn = httpsCallable(functions, 'generateMarketingCopy');
+        const res = await generateMarketingCopyFn({
+            platform,
+            product,
+            angle,
+            clientId: currentUser ? currentUser.id : 'angel'
+        });
+
+        if (res.data?.error) {
+            alert(`Error al generar copys: ${res.data.error}`);
+        } else if (res.data?.variations && res.data.variations.length > 0) {
+            if (grid) {
+                grid.innerHTML = '';
+                res.data.variations.forEach((v, index) => {
+                    const box = document.createElement('div');
+                    box.className = 'ad-card';
+                    box.style.background = '#161616';
+                    box.style.border = '1px solid #2a2a2a';
+                    box.style.borderRadius = '16px';
+                    box.style.padding = '1.5rem';
+                    box.style.display = 'flex';
+                    box.style.flexDirection = 'column';
+                    box.style.gap = '1rem';
+
+                    box.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:#d4af37; font-weight:800; font-size:0.8rem; text-transform:uppercase;">Variación ${index + 1}</span>
+                            <button class="btn-mini btn-copy-ai-text" data-text="${encodeURIComponent(v.text || '')}">📋 Copiar</button>
+                        </div>
+                        <div style="font-size:0.9rem; line-height:1.5; color:#fff; white-space:pre-line;">
+                            <strong>${v.hook || ''}</strong>\n\n${v.body || ''}\n\n<em>${v.cta || ''}</em>
+                        </div>
+                    `;
+                    grid.appendChild(box);
+                });
+
+                // Attach copy event listeners
+                document.querySelectorAll('.btn-copy-ai-text').forEach(btnCopy => {
+                    btnCopy.addEventListener('click', () => {
+                        const rawText = decodeURIComponent(btnCopy.getAttribute('data-text'));
+                        navigator.clipboard.writeText(rawText).then(() => {
+                            showVisualAlert("Texto copiado al portapapeles", "Copiado");
+                        }).catch(() => {
+                            alert("No se pudo copiar.");
+                        });
+                    });
+                });
+            }
+
+            if (container) {
+                container.style.display = 'block';
+                container.scrollIntoView({ behavior: 'smooth' });
+            }
+        } else {
+            alert("No se obtuvieron variaciones de copy.");
+        }
+    } catch (err) {
+        console.error("Error llamando a generateMarketingCopy:", err);
+        alert(`Error al conectar con la IA: ${err.message}`);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨ Generar Copys Inteligentes</span>';
+    }
+});
+
+// Exportar loadLandings para uso global
+window.loadLandings = loadLandings;
+
+// ==========================================
+// GESTIÓN DE USUARIOS (Solo Admin / Master)
+// ==========================================
+
+// --- Cargar lista de usuarios desde Firestore ---
+async function loadUsers() {
+    const tbody = document.getElementById('users-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#d4af37; padding:2rem;"><span class="ai-pulse">Cargando usuarios...</span></td></tr>';
+    
+    try {
+        const snapshot = await getDocs(collection(db, 'users'));
+        if (snapshot.empty) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#555; padding:3rem;">No hay usuarios registrados.</td></tr>';
+            return;
+        }
+
+        const roleLabels = {
+            'admin': '🛡️ Admin',
+            'master': '👑 Master',
+            'staff': '📋 Staff',
+            'vendedor': '🏷️ Vendedor'
+        };
+        const clientLabels = {
+            'master': 'Control Maestro HQ',
+            'angel': 'Angel Curbelo',
+            'papi': 'Papi Solar'
+        };
+
+        let rows = '';
+        snapshot.forEach(docSnap => {
+            const u = docSnap.data();
+            const uid = docSnap.id;
+            const createdDate = u.createdAt?.toDate?.() ? u.createdAt.toDate().toLocaleDateString('es-PR') : 'N/A';
+            const isDisabled = u.disabled === true;
+            const statusBadge = isDisabled
+                ? '<span style="color:#ff4d4d; font-weight:700; font-size:0.75rem;">⛔ Deshabilitado</span>'
+                : '<span style="color:#2ecc71; font-weight:700; font-size:0.75rem;">✅ Activo</span>';
+
+            rows += `
+                <tr style="${isDisabled ? 'opacity:0.5;' : ''}">
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:28px; height:28px; border-radius:50%; background:${isDisabled ? '#333' : '#d4af37'}; color:#000; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.7rem;">
+                                ${(u.name || 'U').split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase()}
+                            </div>
+                            <span style="font-weight:600; font-size:0.85rem;">${u.name || 'Sin nombre'}</span>
+                        </div>
+                    </td>
+                    <td style="color:#888; font-size:0.8rem;">${u.email || '-'}</td>
+                    <td>
+                        <select class="status-select user-role-select" data-uid="${uid}" data-email="${u.email || ''}" style="font-size:0.75rem;" ${isDisabled ? 'disabled' : ''}>
+                            <option value="vendedor" ${u.role === 'vendedor' ? 'selected' : ''}>Vendedor</option>
+                            <option value="staff" ${u.role === 'staff' ? 'selected' : ''}>Staff</option>
+                            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                            <option value="master" ${u.role === 'master' ? 'selected' : ''}>Master</option>
+                        </select>
+                    </td>
+                    <td style="font-size:0.8rem;">${clientLabels[u.clientId] || u.clientId || '-'}</td>
+                    <td>${statusBadge}</td>
+                    <td style="color:#555; font-size:0.75rem;">${createdDate}</td>
+                    <td>
+                        <button class="btn-mini btn-toggle-user" data-uid="${uid}" data-email="${u.email || ''}" data-disabled="${isDisabled}" style="font-size:0.7rem;">
+                            ${isDisabled ? '✅ Habilitar' : '⛔ Deshabilitar'}
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = rows;
+
+        // Event: Cambiar rol
+        document.querySelectorAll('.user-role-select').forEach(sel => {
+            sel.addEventListener('change', async (e) => {
+                const uid = e.target.getAttribute('data-uid');
+                const email = e.target.getAttribute('data-email');
+                const newRole = e.target.value;
+                try {
+                    await updateDoc(doc(db, 'users', uid), { role: newRole });
+                    await saveAuditLog(`Actualizó rol de ${email} a ${newRole}`);
+                    showVisualAlert(`Rol actualizado a ${newRole}`, '✅ Rol Cambiado');
+                } catch (err) {
+                    console.error('Error actualizando rol:', err);
+                    alert('Error al actualizar rol: ' + err.message);
+                    loadUsers(); // Recargar para revertir visualmente
+                }
+            });
+        });
+
+        // Event: Habilitar/Deshabilitar usuario
+        document.querySelectorAll('.btn-toggle-user').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const uid = btn.getAttribute('data-uid');
+                const email = btn.getAttribute('data-email');
+                const isCurrentlyDisabled = btn.getAttribute('data-disabled') === 'true';
+                const action = isCurrentlyDisabled ? 'habilitar' : 'deshabilitar';
+
+                if (!confirm(`¿Estás seguro de que deseas ${action} al usuario ${email}?`)) return;
+
+                try {
+                    await updateDoc(doc(db, 'users', uid), { disabled: !isCurrentlyDisabled });
+                    await saveAuditLog(`${isCurrentlyDisabled ? 'Habilitó' : 'Deshabilitó'} usuario: ${email}`);
+                    showVisualAlert(`Usuario ${action}do correctamente`, `✅ ${action.charAt(0).toUpperCase() + action.slice(1)}do`);
+                    loadUsers();
+                } catch (err) {
+                    console.error(`Error al ${action} usuario:`, err);
+                    alert(`Error al ${action} usuario: ` + err.message);
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error('Error cargando usuarios:', error);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#ff4d4d; padding:2rem;">Error al cargar usuarios.</td></tr>';
+    }
+}
+
+window.submitCreateUser = async () => {
+    const name = document.getElementById('new-user-name')?.value.trim();
+    const email = document.getElementById('new-user-email')?.value.trim();
+    const password = document.getElementById('new-user-password')?.value;
+    const role = document.getElementById('new-user-role')?.value;
+    const clientId = document.getElementById('new-user-client')?.value;
+    const statusEl = document.getElementById('create-user-status');
+    const submitBtn = document.getElementById('btn-create-user-submit');
+    const modal = document.getElementById('create-user-modal');
+
+    if (!name || !email || !password || !role || !clientId) {
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = '<span style="color:#f39c12;">⚠️ Todos los campos son obligatorios</span>';
+        }
+        return;
+    }
+
+    try {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="ai-pulse">🔄 Creando usuario...</span>';
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = '<span style="color:#3498db;">Conectando con servidor de seguridad...</span>';
+        }
+
+        const createUserFn = httpsCallable(functions, 'createCRMUser');
+        const result = await createUserFn({
+            email,
+            password,
+            name,
+            role,
+            clientId
+        });
+
+        if (result.data.error) {
+            throw new Error(result.data.error);
+        }
+
+        // Éxito
+        await saveAuditLog(`Creó usuario: ${email} (rol: ${role}, cliente: ${clientId})`);
+        showVisualAlert(result.data.message || `Usuario ${name} creado exitosamente`, '✅ Usuario Creado');
+
+        // Limpiar formulario
+        document.getElementById('new-user-name').value = '';
+        document.getElementById('new-user-email').value = '';
+        document.getElementById('new-user-password').value = '';
+        document.getElementById('new-user-role').value = 'vendedor';
+        document.getElementById('new-user-client').value = 'angel';
+        if (statusEl) statusEl.style.display = 'none';
+
+        // Cerrar modal y recargar tabla
+        modal?.classList.remove('active');
+        loadUsers();
+
+    } catch (error) {
+        console.error('Error creando usuario:', error);
+        if (statusEl) {
+            statusEl.innerHTML = `<span style="color:#ff4d4d;">❌ Error de conexión: ${error.message}</span>`;
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '🚀 Crear Usuario en el Sistema';
+    }
+};
+
+// --- Modal: Crear Usuario ---
+function setupCreateUserModal() {
+    const openBtn = document.getElementById('btn-create-user');
+    const closeBtn = document.getElementById('close-create-user-modal');
+    const modal = document.getElementById('create-user-modal');
+    const submitBtn = document.getElementById('btn-create-user-submit');
+
+    openBtn?.addEventListener('click', () => {
+        modal?.classList.add('active');
+    });
+
+    closeBtn?.addEventListener('click', () => {
+        modal?.classList.remove('active');
+    });
+
+    modal?.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('active');
+    });
+
+    submitBtn?.addEventListener('click', window.submitCreateUser);
+}
+
+// Cargar usuarios cuando se navega a la sección
+const usersNavItem = document.querySelector('[data-section="users-section"]');
+if (usersNavItem) {
+    usersNavItem.addEventListener('click', () => {
+        loadUsers();
+    });
+}

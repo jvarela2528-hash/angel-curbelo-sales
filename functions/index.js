@@ -71,9 +71,10 @@ async function callGeminiVision(imageBase64, prompt, systemInstruction = null) {
 }
 
 // CONFIGURACIÓN DE GREEN API (WhatsApp Directo sin verificación de Meta)
-const GREEN_API_HOST = process.env.GREEN_API_HOST || "https://7107.api.greenapi.com";
-const GREEN_API_ID = process.env.GREEN_API_ID || "7107624036";
-const GREEN_API_TOKEN = process.env.GREEN_API_TOKEN || "63714e54cc4240b9a7f6ea9108298024bb0698d020f345e5a8";
+// ✅ CORREGIDO: Sin valores reales expuestos. Se maneja puramente por variables de entorno de Firebase.
+const GREEN_API_HOST  = process.env.GREEN_API_HOST;
+const GREEN_API_ID    = process.env.GREEN_API_ID;
+const GREEN_API_TOKEN = process.env.GREEN_API_TOKEN;
 
 const MY_PHONE_NUMBER = "17874596147"; // Número móvil de recepción (Sin + ni guiones)
 
@@ -390,6 +391,9 @@ exports.extractLeadsFromImage = onCall({ timeoutSeconds: 120 }, async (request) 
 });
 
 // ====== IA ASISTENTE DE COMUNICACIÓN ======
+// export const initStorage = onCall({ region: 'us-central1' }, async (request) => { ... });
+
+
 exports.generateLeadMessage = onCall({ timeoutSeconds: 60 }, async (request) => {
     const { lead, objective, tone } = request.data;
     if (!lead) return { error: "Datos del prospecto incompletos." };
@@ -833,3 +837,167 @@ exports.initiateOutboundVapiCall = onCall({ timeoutSeconds: 60 }, async (request
     }
 });
 
+// ====== NUEVO: GENERADOR CREATIVO DE ANUNCIOS CON IA ======
+exports.generateMarketingCopy = onCall({ timeoutSeconds: 120 }, async (request) => {
+    const { platform, product, angle, clientId } = request.data;
+    
+    if (!platform || !product || !angle) {
+        return { error: "Faltan parámetros requeridos (platform, product, angle)" };
+    }
+
+    try {
+        const admin = getAdmin();
+        const usageRef = admin.firestore().collection("usage").doc("stats");
+        const usageDoc = await usageRef.get();
+        let currentSpent = 0;
+        const targetId = clientId || 'angel';
+        
+        if (usageDoc.exists) {
+            currentSpent = usageDoc.data()[targetId] || 0;
+        }
+
+        if (targetId !== 'master' && currentSpent >= 5.00) {
+            return { error: "Límite de presupuesto alcanzado ($5.00). Por favor recargue.", limitReached: true };
+        }
+
+        console.log(`🤖 Generando copy para plataforma: ${platform}, producto: ${product}, enfoque: ${angle}`);
+
+        const systemInstruction = `Eres un redactor creativo de anuncios y copywriter premium experto en marketing digital.
+Tu tarea es escribir copys persuasivos de alta conversión para la plataforma: ${platform}.
+Debes redactar contenido específico para el producto o servicio: "${product}" con un enfoque de campaña basado en: "${angle}".
+Debes devolver SIEMPRE una respuesta en formato JSON limpio con exactamente 3 variaciones diferentes bajo la clave "variations".
+Cada variación debe tener esta estructura exacta de campos:
+{
+  "hook": "Un gancho inicial hiper persuasivo, emocionante y directo con emojis correctos.",
+  "body": "El cuerpo del anuncio describiendo los beneficios clave, puntos de dolor y utilizando emojis adecuados.",
+  "cta": "Una llamada a la acción irresistible y clara.",
+  "text": "El copy completo final unificado listo para copiar y pegar (combinando hook, body y cta, con saltos de línea)."
+}
+Asegúrate de no incluir texto fuera del JSON. Devuelve solo el objeto JSON.`;
+
+        const userPrompt = `Escribe 3 variaciones de anuncios para ${platform} sobre "${product}" con el enfoque de "${angle}".`;
+
+        const responseText = await callGeminiText(userPrompt, systemInstruction, true);
+        
+        let parsedResult;
+        try {
+            // Intentar parsear el JSON limpio
+            const cleanText = responseText.replace(/```json\s?|```/g, "").trim();
+            parsedResult = JSON.parse(cleanText);
+        } catch (jsonErr) {
+            console.error("Error parseando respuesta JSON de Gemini:", responseText);
+            // Intentar recuperar con regex o devolver estructura por defecto
+            parsedResult = {
+                variations: [
+                    {
+                        hook: "✨ ¡Llegó la solución que esperabas!",
+                        body: responseText.substring(0, 300),
+                        cta: "👉 Conoce más hoy.",
+                        text: responseText
+                    }
+                ]
+            };
+        }
+
+        // Registrar costo simbólico
+        const cost = 0.0001;
+        const newTotal = currentSpent + cost;
+        await usageRef.set({
+            [targetId]: newTotal,
+            [`${targetId}_last_use`]: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        return {
+            variations: parsedResult.variations || [],
+            totalSpent: newTotal,
+            nearLimit: newTotal >= 4.50
+        };
+
+    } catch (error) {
+        console.error("❌ Error en generateMarketingCopy:", error);
+        return { error: `Error al generar copy con IA: ${error.message}` };
+    }
+});
+
+// ====== GESTIÓN DE USUARIOS CRM (Admin SDK — Server-Side) ======
+exports.createCRMUser = onCall({ timeoutSeconds: 30 }, async (request) => {
+    // Verificar autenticación
+    if (!request.auth) {
+        return { error: "No autenticado." };
+    }
+
+    const { email, password, name, role, clientId } = request.data;
+
+    // Validaciones de entrada
+    if (!email || !password || !name || !role || !clientId) {
+        return { error: "Faltan campos obligatorios (email, password, name, role, clientId)." };
+    }
+
+    if (password.length < 6) {
+        return { error: "La contraseña debe tener al menos 6 caracteres." };
+    }
+
+    const validRoles = ['admin', 'master', 'staff', 'vendedor'];
+    if (!validRoles.includes(role)) {
+        return { error: `Rol inválido. Roles permitidos: ${validRoles.join(', ')}` };
+    }
+
+    try {
+        const admin = getAdmin();
+
+        // Doble verificación: Confirmar que el caller es admin, master, o el dueño (Angel)
+        const callerDoc = await admin.firestore().collection('users').doc(request.auth.uid).get();
+        if (!callerDoc.exists) {
+            return { error: "No autorizado. Perfil no encontrado." };
+        }
+        
+        const callerData = callerDoc.data();
+        const isOwner = request.auth.token.email === 'jvarela2528@gmail.com' || request.auth.token.email === 'angelcurbelosales@gmail.com';
+        const isMasterOrAdmin = ['admin', 'master'].includes(callerData.role);
+        
+        if (!isMasterOrAdmin && !isOwner) {
+            return { error: "No autorizado. Solo administradores pueden crear usuarios." };
+        }
+
+        // Crear usuario en Firebase Auth (server-side, sin afectar sesión del admin)
+        const userRecord = await admin.auth().createUser({
+            email: email,
+            password: password,
+            displayName: name
+        });
+
+        console.log(`✅ Usuario Auth creado: ${userRecord.uid} (${email})`);
+
+        // Crear perfil en Firestore
+        await admin.firestore().collection('users').doc(userRecord.uid).set({
+            name: name,
+            email: email,
+            role: role,
+            clientId: clientId,
+            disabled: false,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdBy: request.auth.uid
+        });
+
+        console.log(`✅ Perfil Firestore creado para: ${name} (${email}) con rol: ${role}`);
+
+        return {
+            success: true,
+            uid: userRecord.uid,
+            message: `Usuario "${name}" (${email}) creado exitosamente con rol: ${role}.`
+        };
+
+    } catch (error) {
+        console.error("❌ Error en createCRMUser:", error);
+
+        // Errores conocidos de Firebase Auth
+        if (error.code === 'auth/email-already-exists') {
+            return { error: "Ya existe un usuario con ese correo electrónico." };
+        }
+        if (error.code === 'auth/invalid-email') {
+            return { error: "El formato del correo electrónico es inválido." };
+        }
+
+        return { error: `Error al crear usuario: ${error.message}` };
+    }
+});

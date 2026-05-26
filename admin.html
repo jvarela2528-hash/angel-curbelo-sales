@@ -351,7 +351,7 @@
     <div class="mobile-header" id="mobile-nav">
         <div class="flex items-center gap-3">
             <div class="brand-logo-mark" style="width: 32px; height: 32px; font-size: 0.8rem;">AC</div>
-            <span style="font-weight: 700; font-size: 0.9rem;">AC CRM</span>
+            <span id="mobile-user-greeting" style="font-weight: 700; font-size: 0.9rem;">AC CRM</span>
         </div>
         <button class="menu-toggle" id="menu-toggle-btn">
             ☰
@@ -367,13 +367,21 @@
                     <small>SALES PREMIUM</small>
                 </div>
             </div>
+            <!-- Contenedor del Perfil de Usuario Logueado -->
+            <div class="user-profile-badge" style="padding: 0.8rem; background: rgba(255,255,255,0.03); border-radius: 12px; margin: 0 0.5rem 1rem 0.5rem; border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: #d4af37; color: #000; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;" id="user-avatar-initials">U</div>
+                <div style="display: flex; flex-direction: column; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <span style="font-size: 0.8rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="user-display-name">Cargando...</span>
+                    <span style="font-size: 0.65rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px;" id="user-display-role">Vendedor</span>
+                </div>
+            </div>
             <nav style="flex:1;">
                 <div class="nav-group expanded">
                     <div class="nav-item active" data-section="leads-section" data-filter="all">📊 Prospectos (Global)</div>
                     <div class="nav-sub-items">
-                        <div class="nav-sub-item" data-section="leads-section" data-filter="direct">☀️ Solar</div>
-                        <div class="nav-sub-item" data-section="leads-section" data-filter="zendure-pr">🔋 Zendure (Bat)</div>
-                        <div class="nav-sub-item" data-section="leads-section" data-filter="hh-integral">🏠 Bienestar (HH)</div>
+                        <div class="nav-sub-item" data-section="leads-section" data-filter="direct">☀️ Solar de Placas y Baterías</div>
+                        <div class="nav-sub-item" data-section="leads-section" data-filter="zendure-pr">🔋 Sistemas de Backup para Casas y Apartamentos</div>
+                        <div class="nav-sub-item" data-section="leads-section" data-filter="hh-integral">🏠 Sistema de Filtración de Aguas y Bienestar</div>
                         <div class="nav-sub-item" data-section="leads-section" data-filter="rainbow-pr">💧 Rainbow</div>
                     </div>
                 </div>
@@ -389,13 +397,15 @@
                 <div class="nav-group expanded">
                     <div class="nav-item" data-section="marketing-section" data-filter-ad="all">📣 Creativos (Global)</div>
                     <div class="nav-sub-items">
-                        <a href="#creativos-direct" class="nav-sub-item" data-section="marketing-section" data-filter-ad="direct">Solar (Direct)</a>
-                        <a href="#creativos-bienestar" class="nav-sub-item" data-section="marketing-section" data-filter-ad="hh-integral">Bienestar (HH)</a>
+                        <a href="#creativos-direct" class="nav-sub-item" data-section="marketing-section" data-filter-ad="direct">Solar de Placas y Baterías</a>
+                        <a href="#creativos-bienestar" class="nav-sub-item" data-section="marketing-section" data-filter-ad="hh-integral">Sistema de Filtración de Aguas y Bienestar</a>
                         <a href="#creativos-rainbow" class="nav-sub-item" data-section="marketing-section" data-filter-ad="rainbow-pr">Rainbow PR</a>
                     </div>
                 </div>
                 <div class="nav-item" data-section="qr-section">📲 Código QR Oficial</div>
-                <div class="nav-item" data-section="manual-entry-section">➕ Entrada Manual</div>
+                <div class="nav-item" data-section="manual-entry-section">➕ Añadir Usuarios/Leads</div>
+                <div class="nav-item" data-section="ad-generator-section">✍️ Generador de Anuncios</div>
+
 
                 <div class="nav-item" id="logout-btn">
                     🚪 Cerrar Sesión
@@ -505,9 +515,9 @@
                         <label style="font-size: 0.7rem; color: #888; display: block; margin-bottom: 5px; text-transform: uppercase;">Filtrar Segmento</label>
                         <select id="stats-filter" class="status-select" style="padding: 8px 15px; font-size: 0.9rem;">
                             <option value="all">Global (Todos)</option>
-                            <option value="direct">☀️ Solar</option>
-                            <option value="zendure-pr">🔋 Zendure (Bat)</option>
-                            <option value="hh-integral">🏠 Bienestar (HH)</option>
+                            <option value="direct">☀️ Solar de Placas y Baterías</option>
+                            <option value="zendure-pr">🔋 Sistemas de Backup para Casas y Apartamentos</option>
+                            <option value="hh-integral">🏠 Sistema de Filtración de Aguas y Bienestar</option>
                             <option value="rainbow-pr">💧 Rainbow</option>
                         </select>
                     </div>
@@ -655,10 +665,10 @@
             <section id="marketing-section" class="section">
                 <div class="sticky-nav">
                     <a href="#creativos-global" class="nav-pill" data-pill="all">🌐 Global</a>
-                    <a href="#creativos-solar" class="nav-pill" data-pill="direct">☀️ Solar</a>
-                    <a href="#creativos-bienestar" class="nav-pill" data-pill="hh-integral">💧 Bienestar</a>
+                    <a href="#creativos-solar" class="nav-pill" data-pill="direct">☀️ Solar de Placas y Baterías</a>
+                    <a href="#creativos-bienestar" class="nav-pill" data-pill="hh-integral">💧 Filtración y Bienestar</a>
                     <a href="#creativos-rainbow" class="nav-pill" data-pill="rainbow-pr">🌈 Rainbow</a>
-                    <a href="#creativos-zendure" class="nav-pill" data-pill="zendure-pr">🔋 Zendure</a>
+                    <a href="#creativos-zendure" class="nav-pill" data-pill="zendure-pr">🔋 Respaldo</a>
                 </div>
                 <header style="margin-bottom:2rem; display:flex; justify-content:space-between; align-items:center;">
                     <div>
@@ -775,8 +785,8 @@
                     </div>
                     <div style="flex-grow: 1; max-width: 350px; min-width: 250px;">
                         <select id="qr-area-select" class="input-field w-full" style="background: #000; border: 2px solid #d4af37; color: #fff; font-size: 1rem; font-weight: 700; padding: 0.9rem 1.2rem; border-radius: 12px; cursor: pointer; box-shadow: 0 0 20px rgba(212,175,55,0.25); outline: none;">
-                            <option value="solar" selected>☀️ Energía Solar</option>
-                            <option value="hh">🏠 H&H Distributor (Bienestar)</option>
+                            <option value="solar" selected>☀️ Solar de Placas y Baterías</option>
+                            <option value="hh">🏠 Sistema de Filtración de Aguas y Bienestar</option>
                             <option value="rainbow">🌪️ Rainbow (Purificación)</option>
                         </select>
                     </div>
@@ -829,11 +839,115 @@
                 </div>
             </section>
 
+            <!-- SECCIÓN GENERADOR DE ANUNCIOS Y LANDINGS -->
+            <section id="ad-generator-section" class="section">
+                <div class="panel-header">
+                    <div>
+                        <h1 style="font-size: 1.5rem;">✍️ Generador Creativo con IA & Landings</h1>
+                        <p style="color:#666; font-size:0.8rem;">Genera copys de alta conversión y configura landing pages promocionales en segundos</p>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <!-- GENERADOR DE COPYS IA -->
+                    <div class="card" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <h3 style="color:#d4af37; font-size:1rem; margin-bottom:0.5rem; font-weight:700; text-transform:uppercase; letter-spacing:1px;">🪄 Generador de Copys</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-xs opacity-60" style="display:block; margin-bottom:6px; font-weight: 700; text-transform: uppercase;">Plataforma Destino</label>
+                                <select id="ai-copy-platform" class="input-field w-full" style="background:#000; border:1px solid #333; padding:0.8rem; border-radius:10px; color:#fff;">
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="TikTok">TikTok</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs opacity-60" style="display:block; margin-bottom:6px; font-weight: 700; text-transform: uppercase;">Producto/Servicio</label>
+                                <select id="ai-copy-product" class="input-field w-full" style="background:#000; border:1px solid #333; padding:0.8rem; border-radius:10px; color:#fff;">
+                                    <option value="Solar de Placas y Baterías">Solar de Placas y Baterías</option>
+                                    <option value="Sistema de Filtración">Sistema de Filtración</option>
+                                    <option value="Sistemas de Backup">Sistemas de Backup</option>
+                                    <option value="Reclutamiento">Reclutamiento</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs opacity-60" style="display:block; margin-bottom:6px; font-weight: 700; text-transform: uppercase;">Enfoque del Anuncio</label>
+                                <select id="ai-copy-angle" class="input-field w-full" style="background:#000; border:1px solid #333; padding:0.8rem; border-radius:10px; color:#fff;">
+                                    <option value="Oferta especial">Oferta especial</option>
+                                    <option value="Concientización">Concientización</option>
+                                    <option value="Reclutamiento directo">Reclutamiento directo</option>
+                                </select>
+                            </div>
+
+                            <button class="btn btn-primary w-full" id="btn-generate-marketing-copy" style="padding:1.1rem; font-size:1rem; border-radius:12px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:10px; margin-top:1.5rem;">
+                                <span>✨ Generar Copys Inteligentes</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- GESTIÓN DE LANDING PAGES -->
+                    <div class="card" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <h3 style="color:#d4af37; font-size:1rem; margin-bottom:0.5rem; font-weight:700; text-transform:uppercase; letter-spacing:1px;">🚀 Configurar Landing Page</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-xs opacity-60" style="display:block; margin-bottom:4px;">ID del Documento / Oferta *</label>
+                                <input type="text" id="landing-id" class="input-field w-full" placeholder="Ej: OFERTA_VERANO" required style="background:#000; border:1px solid #333; padding:0.8rem; border-radius:10px; color:#fff;">
+                            </div>
+                            <div>
+                                <label class="text-xs opacity-60" style="display:block; margin-bottom:4px;">Título Principal *</label>
+                                <input type="text" id="landing-title" class="input-field w-full" placeholder="Ej: ¡Independencia Energética!" required style="background:#000; border:1px solid #333; padding:0.8rem; border-radius:10px; color:#fff;">
+                            </div>
+                            <div>
+                                <label class="text-xs opacity-60" style="display:block; margin-bottom:4px;">Subtítulo *</label>
+                                <input type="text" id="landing-subtitle" class="input-field w-full" placeholder="Ej: Ahorra en tu factura hoy..." required style="background:#000; border:1px solid #333; padding:0.8rem; border-radius:10px; color:#fff;">
+                            </div>
+                            <div>
+                                <label class="text-xs opacity-60" style="display:block; margin-bottom:4px;">Detalle de la Oferta Especial *</label>
+                                <input type="text" id="landing-promo" class="input-field w-full" placeholder="Ej: $0 Pronto + Instalación Gratis" required style="background:#000; border:1px solid #333; padding:0.8rem; border-radius:10px; color:#fff;">
+                            </div>
+                            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div>
+                                    <label class="text-xs opacity-60" style="display:block; margin-bottom:4px;">Color Enfoque (Hex/HSL)</label>
+                                    <input type="text" id="landing-color" class="input-field w-full" placeholder="Ej: #d4af37" value="#d4af37" style="background:#000; border:1px solid #333; padding:0.8rem; border-radius:10px; color:#fff;">
+                                </div>
+                                <div>
+                                    <label class="text-xs opacity-60" style="display:block; margin-bottom:4px;">Formulario Destino (Link)</label>
+                                    <input type="text" id="landing-form" class="input-field w-full" placeholder="Ej: /cuestionario.html" value="/cuestionario.html" style="background:#000; border:1px solid #333; padding:0.8rem; border-radius:10px; color:#fff;">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary w-full" id="btn-save-landing" style="padding:1.1rem; font-size:1rem; border-radius:12px; font-weight:800;">
+                                💾 Guardar Landing en Firestore
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTENEDOR DE COPYS GENERADOS -->
+                <div id="generated-copies-container" style="display:none; margin-top:2.5rem;">
+                    <h3 style="margin-bottom:1.2rem; display:flex; align-items:center; gap:10px; font-size:1.2rem; font-weight:700;"><span style="color:#d4af37;">✨</span> Variaciones Generadas</h3>
+                    <div id="ai-copies-variations-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                        <!-- Se puebla dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- LISTADO DE LANDINGS EXISTENTES -->
+                <div style="margin-top:4rem;">
+                    <h2 style="margin-bottom:1.5rem; display:flex; align-items:center; gap:10px; font-size:1.3rem; font-weight:700;">🚀 Enlaces de Landings Activas</h2>
+                    <div id="landings-list-body" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:1.5rem;">
+                        <!-- Se puebla dinámicamente -->
+                    </div>
+                </div>
+            </section>
+
             <!-- SECCIÓN ENTRADA MANUAL + OCR -->
             <section id="manual-entry-section" class="section">
                 <div class="panel-header">
                     <div>
-                        <h1 style="font-size:1.5rem;">➕ Entrada Manual de Leads</h1>
+                        <h1 style="font-size:1.5rem;">➕ Añadir Usuarios / Leads</h1>
                         <p style="color:#666; font-size:0.8rem;">Agrega prospectos manualmente o escanea una foto para importar</p>
                     </div>
                 </div>
@@ -859,11 +973,11 @@
                                 <div>
                                     <label class="text-xs opacity-60" style="display:block; margin-bottom:4px;">Servicio</label>
                                     <select id="manual-service" class="input-field w-full">
-                                        <option value="solar">☀️ Solar</option>
-                                        <option value="hh">🏠 Bienestar HH</option>
+                                        <option value="solar">☀️ Solar de Placas y Baterías</option>
+                                        <option value="hh">🏠 Sistema de Filtración de Aguas y Bienestar</option>
                                         <option value="rainbow">🌪️ Rainbow</option>
                                         <option value="agua">💧 Sistemas Agua</option>
-                                        <option value="zendure">🔋 Zendure</option>
+                                        <option value="zendure">🔋 Sistemas de Backup para Casas y Apartamentos</option>
                                     </select>
                                 </div>
                                 <div>
@@ -915,6 +1029,49 @@
                     </div>
                 </div>
 
+                <!-- FORMULARIO CREAR USUARIO -->
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h3 style="color:#d4af37; margin-bottom:1.5rem; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">👤 Crear Nuevo Usuario en el Sistema</h3>
+                    <p style="color:#888; font-size:0.85rem; margin-bottom:1.5rem;">Crea cuenta en Firebase Auth + perfil en Firestore para acceso al panel.</p>
+                    <div class="space-y-4">
+                        <div class="grid" style="grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div>
+                                <label class="text-xs opacity-60" style="display:block; margin-bottom:4px;">Nombre Completo *</label>
+                                <input type="text" id="new-user-name" class="input-field w-full" placeholder="Ej: Carlos Pérez">
+                            </div>
+                            <div>
+                                <label class="text-xs opacity-60" style="display:block; margin-bottom:4px;">Correo Electrónico *</label>
+                                <input type="email" id="new-user-email" class="input-field w-full" placeholder="correo@ejemplo.com">
+                            </div>
+                        </div>
+                        <div class="grid" style="grid-template-columns:1fr 1fr; gap:1rem;">
+                            <div>
+                                <label class="text-xs opacity-60" style="display:block; margin-bottom:4px;">Contraseña *</label>
+                                <input type="password" id="new-user-password" class="input-field w-full" placeholder="Mínimo 6 caracteres">
+                            </div>
+                            <div>
+                                <label class="text-xs opacity-60" style="display:block; margin-bottom:4px;">Rol *</label>
+                                <select id="new-user-role" class="input-field w-full">
+                                    <option value="vendedor">Vendedor</option>
+                                    <option value="staff">Staff</option>
+                                    <option value="admin">Administrador</option>
+                                    <option value="master">Master</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs opacity-60" style="display:block; margin-bottom:4px;">Cliente Asociado *</label>
+                            <select id="new-user-client" class="input-field w-full">
+                                <option value="angel">Angel Curbelo</option>
+                                <option value="master">Control Maestro HQ</option>
+                                <option value="papi">Papi Solar</option>
+                            </select>
+                        </div>
+                        <div id="create-user-status" style="text-align:center; margin-top:1rem; font-size:0.85rem; color:#888; display:none;"></div>
+                        <button id="btn-create-user-submit" class="btn btn-primary w-full" onclick="if(window.submitCreateUser) window.submitCreateUser()" style="padding:1rem; font-size:0.95rem; border-radius:12px; margin-top:1rem;">🚀 Crear Usuario</button>
+                    </div>
+                </div>
+
                 <!-- TABLA RESULTADOS OCR -->
                 <div id="ocr-results-container" style="display:none; margin-top:2rem;">
                     <div class="card">
@@ -938,8 +1095,7 @@
                     </div>
                 </div>
             </section>
-        </main>
-    </div>
+
 
     <!-- MODAL ASISTENTE IA DE COMUNICACIÓN -->
     <div id="ai-comm-modal" class="modal-overlay">
@@ -1131,8 +1287,25 @@
             </button>
 
             <div id="appointment-status" style="text-align:center; margin-top:1rem; font-size:0.9rem; color:#888; display:none;"></div>
+            
+            <div style="margin-top: 2rem; border-top: 1px solid #222; padding-top: 2rem;">
+                <h3 style="color:#fff; font-size:1.1rem; margin-bottom: 1rem;">👤 Crear Nuevo Usuario</h3>
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <input type="text" id="new-user-name" placeholder="Nombre completo" style="background:#0a0a0a; border:1px solid #333; padding:0.8rem; border-radius:10px; color:#fff;">
+                    <input type="email" id="new-user-email" placeholder="Correo electrónico" style="background:#0a0a0a; border:1px solid #333; padding:0.8rem; border-radius:10px; color:#fff;">
+                    <input type="password" id="new-user-password" placeholder="Contraseña" style="background:#0a0a0a; border:1px solid #333; padding:0.8rem; border-radius:10px; color:#fff;">
+                    <button id="btn-create-user-submit" class="btn w-full" onclick="if(window.submitCreateUser) window.submitCreateUser()" style="background:linear-gradient(135deg, #d4af37, #f9e29c); color:#000; font-weight:800; padding:1rem; border-radius:12px; border:none; cursor:pointer;">
+                        🚀 Crear Usuario
+                    </button>
+                    <div id="create-user-status" style="text-align:center; margin-top:0.5rem; font-size:0.85rem; color:#888; display:none;"></div>
+                </div>
+            </div>
         </div>
     </div>
+
+        </main>
+    </div>
+
 
     <footer style="margin-top: 5rem; padding: 2rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); color: #555; font-size: 0.75rem;">
         <p>© 2026 Angel Curbelo Sales Premium CRM</p>

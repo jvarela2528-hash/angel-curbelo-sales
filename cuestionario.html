@@ -63,7 +63,7 @@
                     <div class="step active" id="step-solar-1">
                         <h2 class="title">¿Eres dueño de la propiedad?</h2>
                         <div class="options-grid">
-                            <button class="option-btn" onclick="setField('isOwner', 'Sí'); nextStep('solar-1', 'solar-type')">SÍ, SOY DUEÑO</button>
+                            <button class="option-btn" onclick="setField('isOwner', 'Sí'); nextStep('solar-1', 'solar-segregation')">SÍ, SOY DUEÑO</button>
                             <button class="option-btn" onclick="setField('isOwner', 'No'); nextStep('solar-1', 'solar-renter-warning')">NO, RENTO</button>
                         </div>
                     </div>
@@ -74,7 +74,32 @@
                             Para instalar un sistema solar en una propiedad alquilada, <strong>es requisito indispensable contar con una autorización formal por escrito del dueño de la propiedad</strong>.
                         </p>
                         <div style="display: flex; justify-content: center;">
-                            <button class="btn btn-primary" onclick="nextStep('solar-renter-warning', 'solar-type')">Entendido, Continuar</button>
+                            <button class="btn btn-primary" onclick="nextStep('solar-renter-warning', 'solar-segregation')">Entendido, Continuar</button>
+                        </div>
+                    </div>
+                    <div class="step" id="step-solar-segregation">
+                        <h2 class="title">Seleccione su opción de <span class="highlight">interés</span></h2>
+                        <div class="options-grid">
+                            <button class="option-btn flex items-center justify-between group transition-all duration-300" onclick="setField('subCategory', 'Placas Solas'); nextStep('solar-segregation', 'solar-type')">
+                                <span>☀️ Placas Solas</span>
+                                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-yellow-400">→</span>
+                            </button>
+                            <button class="option-btn flex items-center justify-between group transition-all duration-300" onclick="setField('subCategory', 'Sistema con Baterías'); nextStep('solar-segregation', 'solar-type')">
+                                <span>🔋 Sistema con Baterías</span>
+                                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-yellow-400">→</span>
+                            </button>
+                            <button class="option-btn flex items-center justify-between group transition-all duration-300" onclick="window.location.href='/zendure.html'">
+                                <span>🏠 Sistema solo Backup</span>
+                                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-yellow-400">→</span>
+                            </button>
+                            <button class="option-btn flex items-center justify-between group transition-all duration-300" onclick="setField('subCategory', 'Sistema Off Grid (Desconexión total de Luma)'); nextStep('solar-segregation', 'solar-type')">
+                                <span>🔌 Sistema Off Grid (Desconexión total de Luma)</span>
+                                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-yellow-400">→</span>
+                            </button>
+                            <button class="option-btn flex items-center justify-between group transition-all duration-300" onclick="setField('subCategory', 'Sistema Medición Neta (Crédito en Factura)'); nextStep('solar-segregation', 'solar-type')">
+                                <span>📈 Sistema Medición Neta (Crédito en Factura)</span>
+                                <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-yellow-400">→</span>
+                            </button>
                         </div>
                     </div>
                     <div class="step" id="step-solar-type">

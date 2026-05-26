@@ -5,7 +5,7 @@ export const CLIENTS = {
         password: 'hq2026',
         role: 'master',
         allowedSources: 'all',
-        sections: ['leads', 'marketing', 'stats', 'archive', 'manual-entry', 'qr']
+        sections: ['leads', 'marketing', 'stats', 'archive', 'manual-entry', 'qr', 'users']
     },
     'angel': {
         id: 'angel',
@@ -13,7 +13,7 @@ export const CLIENTS = {
         password: 'angel2026',
         role: 'client',
         allowedSources: 'all',
-        sections: ['leads', 'marketing', 'stats', 'archive', 'manual-entry', 'qr']
+        sections: ['leads', 'marketing', 'stats', 'archive', 'manual-entry', 'qr', 'users']
     },
     'papi': {
         id: 'papi',

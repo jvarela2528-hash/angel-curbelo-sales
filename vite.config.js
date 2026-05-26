@@ -12,6 +12,8 @@ export default defineConfig({
         rainbow: resolve(__dirname, 'rainbow.html'),
         cuestionario: resolve(__dirname, 'cuestionario.html'),
         'zendure-standalone': resolve(__dirname, 'zendure-standalone.html'),
+        reclutamiento: resolve(__dirname, 'reclutamiento.html'),
+        promo: resolve(__dirname, 'promo.html'),
       },
     },
   },

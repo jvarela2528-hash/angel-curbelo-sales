@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets — double protection, never commit
+functions/.env
+functions/.env.*

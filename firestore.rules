@@ -7,41 +7,94 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isStaff() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'master', 'staff'];
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAuthorizedUser() {
+      let docExists = exists(/databases/$(database)/documents/users/$(request.auth.uid));
+      return isAuthenticated() && docExists &&
+        getUserData().get('role', 'vendedor') in ['admin', 'vendedor', 'master', 'staff', 'client'];
+    }
+
+    function isAdmin() {
+      let isOwner = request.auth.token.email in ['jvarela2528@gmail.com', 'angelcurbelosales@gmail.com'];
+      let docExists = exists(/databases/$(database)/documents/users/$(request.auth.uid));
+      let hasRole = docExists && getUserData().get('role', 'vendedor') in ['admin', 'master'];
+      return isAuthenticated() && (isOwner || hasRole);
     }
 
     // Reglas para Colección: Leads (Captura pública)
     match /leads/{leadId} {
       // Permite creación desde el cuestionario sin auth
       allow create: if true; 
-      // Solo staff puede leer o modificar leads
-      allow read, update, delete: if isStaff();
+      // Solo usuarios autenticados y con rol válido pueden leer o modificar leads
+      allow read, update, delete: if isAuthorizedUser();
+    }
+
+    // Reglas para Colección: Logs (Auditoría)
+    match /logs/{logId} {
+      // Lectura restringida únicamente al rol de 'admin'
+      allow read: if isAdmin();
+      // Todos los usuarios autenticados pueden crear logs
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    // Archivo Histórico
+    match /archive/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /ad_archive/{docId} {
+      allow read, write: if isAuthorizedUser();
+    }
+
+    // Colección del asistente IA (Vapi)
+    match /vapi_calls/{callId} {
+      allow read: if isAdmin();
+      allow create: if false; // Solo servidor
+      allow update, delete: if false;
+    }
+    
+    // Estadísticas y Presupuesto
+    match /usage/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     // Reglas para Colección: Interactions
     match /interactions/{interactionId} {
-      allow read, write: if isStaff();
+      allow read, write: if isAuthorizedUser();
     }
 
     // Reglas para Colección: Users (Perfiles y Roles)
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isStaff();
+      // ✅ Permite leer para que el sistema pueda verificar el rol de quien inicia sesión y poblar la tabla
+      allow read: if request.auth != null;
+      
+      // 🔒 Solo tú (master) y Ángel (admin) pueden crear, editar o deshabilitar usuarios en Firestore
+      allow write: if isAdmin();
     }
 
     // Restricción específica para rutas de datos: Admin, Master, Papi
     match /admin/{document=**} {
-      allow read, write: if isStaff();
+      allow read, write: if isAuthorizedUser();
     }
     
     match /master/{document=**} {
-      allow read, write: if isStaff();
+      allow read, write: if isAuthorizedUser();
     }
     
     match /papi/{document=**} {
-      allow read, write: if isStaff();
+      allow read, write: if isAuthorizedUser();
+    }
+
+    // ✅ REGLA: Permite que cualquier usuario en la web lea la configuración de la landing page promocional
+    match /landings_config/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // Bloqueo por defecto para cualquier otra colección
