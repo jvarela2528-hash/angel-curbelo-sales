@@ -158,7 +158,7 @@ ${lead.recordingUrl ? `🎧 Grabación: ${lead.recordingUrl}` : ''}
 
 // ====== NUEVO: GENERACIÓN DE IA CON CONTROL DE COSTOS ======
 exports.generateAIAsset = onCall({ timeoutSeconds: 120 }, async (request) => {
-    const { prompt, type, clientId } = request.data;
+    const { prompt, type, clientId, model } = request.data;
     
     if (!prompt) return { error: "No prompt provided" };
 
@@ -190,21 +190,8 @@ exports.generateAIAsset = onCall({ timeoutSeconds: 120 }, async (request) => {
             const sysPrompt = docContexts[request.data.docType] || docContexts['propuesta'];
             const cleanPrompt = prompt.trim();
             
-            console.log(`📄 Generando documento JSON de tipo: ${request.data.docType} para: ${companyName}`);
-            try {
-                const response = await ai.chat.completions.create({
-                    model: "gpt-4o-mini",
-                    messages: [
-                        { role: "system", content: `Eres un consultor senior de negocios y gerente financiero de ${companyName}. ${sysPrompt} Debes entregar SIEMPRE un objeto JSON válido que cumpla la estructura solicitada.` },
-                        { role: "user", content: `Genera un(a) ${request.data.docType} en formato JSON basado en: ${cleanPrompt}` }
-                    ],
-                    response_format: { type: "json_object" },
-                    temperature: 0.3,
-                });
-                result = response.choices[0].message.content;
-                cost = 0.001;
-            } catch (openaiError) {
-                console.warn("⚠️ OpenAI falló al generar documento. Intentando con Gemini...", openaiError);
+            console.log(`📄 Generando documento JSON de tipo: ${request.data.docType} para: ${companyName} usando modelo: ${model}`);
+            if (model === "gemini") {
                 try {
                     result = await callGeminiText(
                         `Genera un(a) ${request.data.docType} en formato JSON basado en: ${cleanPrompt}`,
@@ -213,8 +200,50 @@ exports.generateAIAsset = onCall({ timeoutSeconds: 120 }, async (request) => {
                     );
                     cost = 0.0001;
                 } catch (geminiError) {
-                    console.error("❌ Fallaron tanto OpenAI como Gemini para generar documento:", geminiError);
-                    throw openaiError;
+                    console.warn("⚠️ Gemini falló al generar documento. Intentando con OpenAI...", geminiError);
+                    try {
+                        const response = await ai.chat.completions.create({
+                            model: "gpt-4o-mini",
+                            messages: [
+                                { role: "system", content: `Eres un consultor senior de negocios y gerente financiero de ${companyName}. ${sysPrompt} Debes entregar SIEMPRE un objeto JSON válido que cumpla la estructura solicitada.` },
+                                { role: "user", content: `Genera un(a) ${request.data.docType} en formato JSON basado en: ${cleanPrompt}` }
+                            ],
+                            response_format: { type: "json_object" },
+                            temperature: 0.3,
+                        });
+                        result = response.choices[0].message.content;
+                        cost = 0.001;
+                    } catch (openaiError) {
+                        console.error("❌ Fallaron tanto Gemini como OpenAI para generar documento:", openaiError);
+                        throw geminiError;
+                    }
+                }
+            } else {
+                try {
+                    const response = await ai.chat.completions.create({
+                        model: "gpt-4o-mini",
+                        messages: [
+                            { role: "system", content: `Eres un consultor senior de negocios y gerente financiero de ${companyName}. ${sysPrompt} Debes entregar SIEMPRE un objeto JSON válido que cumpla la estructura solicitada.` },
+                            { role: "user", content: `Genera un(a) ${request.data.docType} en formato JSON basado en: ${cleanPrompt}` }
+                        ],
+                        response_format: { type: "json_object" },
+                        temperature: 0.3,
+                    });
+                    result = response.choices[0].message.content;
+                    cost = 0.001;
+                } catch (openaiError) {
+                    console.warn("⚠️ OpenAI falló al generar documento. Intentando con Gemini...", openaiError);
+                    try {
+                        result = await callGeminiText(
+                            `Genera un(a) ${request.data.docType} en formato JSON basado en: ${cleanPrompt}`,
+                            `Eres un consultor senior de negocios y gerente financiero de ${companyName}. ${sysPrompt} Debes entregar SIEMPRE un objeto JSON válido que cumpla la estructura solicitada.`,
+                            true
+                        );
+                        cost = 0.0001;
+                    } catch (geminiError) {
+                        console.error("❌ Fallaron tanto OpenAI como Gemini para generar documento:", geminiError);
+                        throw openaiError;
+                    }
                 }
             }
         } else if (type === "image") {
@@ -262,7 +291,7 @@ exports.generateAIAsset = onCall({ timeoutSeconds: 120 }, async (request) => {
             const ctaLink = linkMatch ? linkMatch[1] : 'https://master-crm-jvarela.web.app/';
             const cleanPrompt = prompt.replace(/\[Categoría: .+?\]\s*/g, '').replace(/\[Link: .+?\]\s*/g, '').trim();
             
-            console.log(`✍️ Generando texto para categoría: ${category}, prompt: ${cleanPrompt}`);
+            console.log(`✍️ Generando texto para categoría: ${category}, prompt: ${cleanPrompt} usando modelo: ${model}`);
             
             const categoryContext = {
                 'Energía Solar': 'Vendes e instalas sistemas de paneles solares + baterías de respaldo en Puerto Rico. Enfócate en ahorro, independencia energética y protección contra apagones de LUMA.',
@@ -274,19 +303,7 @@ exports.generateAIAsset = onCall({ timeoutSeconds: 120 }, async (request) => {
             
             const context = categoryContext[category] || categoryContext['Energía Solar'];
             
-            try {
-                const response = await ai.chat.completions.create({
-                    model: "gpt-4o-mini",
-                    messages: [
-                        { role: "system", content: `Eres un experto en redactar anuncios virales para redes sociales. ${context} Tu tarea es entregar el texto del anuncio LISTO PARA PEGAR. NO incluyas etiquetas como 'Hook:', 'Texto corto:', ni introducciones. Solo el texto persuasivo con emojis. Al final incluye un llamado a la acción con el enlace proporcionado.` },
-                        { role: "user", content: `Redacta un anuncio irresistible de ${category} basado en: ${cleanPrompt}. Empieza con un hook potente y sigue con el cuerpo del mensaje. Al final pon: 👉 Cotiza gratis aquí: ${ctaLink}` }
-                    ],
-                });
-                console.log("✅ Respuesta de OpenAI (Texto):", response.choices[0].message.content);
-                result = response.choices[0].message.content;
-                cost = 0.0005;
-            } catch (openaiError) {
-                console.warn("⚠️ OpenAI falló al generar texto de anuncio. Intentando con Gemini...", openaiError);
+            if (model === "gemini") {
                 try {
                     result = await callGeminiText(
                         `Redacta un anuncio irresistible de ${category} basado en: ${cleanPrompt}. Empieza con un hook potente y sigue con el cuerpo del mensaje. Al final pon: 👉 Cotiza gratis aquí: ${ctaLink}`,
@@ -294,8 +311,47 @@ exports.generateAIAsset = onCall({ timeoutSeconds: 120 }, async (request) => {
                     );
                     cost = 0.00005;
                 } catch (geminiError) {
-                    console.error("❌ Fallaron tanto OpenAI como Gemini para generar texto de anuncio:", geminiError);
-                    throw openaiError;
+                    console.warn("⚠️ Gemini falló al generar texto de anuncio. Intentando con OpenAI...", geminiError);
+                    try {
+                        const response = await ai.chat.completions.create({
+                            model: "gpt-4o-mini",
+                            messages: [
+                                { role: "system", content: `Eres un experto en redactar anuncios virales para redes sociales. ${context} Tu tarea es entregar el texto del anuncio LISTO PARA PEGAR. NO incluyas etiquetas como 'Hook:', 'Texto corto:', ni introducciones. Solo el texto persuasivo con emojis. Al final incluye un llamado a la acción con el enlace proporcionado.` },
+                                { role: "user", content: `Redacta un anuncio irresistible de ${category} basado en: ${cleanPrompt}. Empieza con un hook potente y sigue con el cuerpo del mensaje. Al final pon: 👉 Cotiza gratis aquí: ${ctaLink}` }
+                            ],
+                        });
+                        console.log("✅ Respuesta de OpenAI (Fallback):", response.choices[0].message.content);
+                        result = response.choices[0].message.content;
+                        cost = 0.0005;
+                    } catch (openaiError) {
+                        console.error("❌ Fallaron tanto Gemini como OpenAI para generar texto de anuncio:", openaiError);
+                        throw geminiError;
+                    }
+                }
+            } else {
+                try {
+                    const response = await ai.chat.completions.create({
+                        model: "gpt-4o-mini",
+                        messages: [
+                            { role: "system", content: `Eres un experto en redactar anuncios virales para redes sociales. ${context} Tu tarea es entregar el texto del anuncio LISTO PARA PEGAR. NO incluyas etiquetas como 'Hook:', 'Texto corto:', ni introducciones. Solo el texto persuasivo con emojis. Al final incluye un llamado a la acción con el enlace proporcionado.` },
+                            { role: "user", content: `Redacta un anuncio irresistible de ${category} basado en: ${cleanPrompt}. Empieza con un hook potente y sigue con el cuerpo del mensaje. Al final pon: 👉 Cotiza gratis aquí: ${ctaLink}` }
+                        ],
+                    });
+                    console.log("✅ Respuesta de OpenAI (Texto):", response.choices[0].message.content);
+                    result = response.choices[0].message.content;
+                    cost = 0.0005;
+                } catch (openaiError) {
+                    console.warn("⚠️ OpenAI falló al generar texto de anuncio. Intentando con Gemini...", openaiError);
+                    try {
+                        result = await callGeminiText(
+                            `Redacta un anuncio irresistible de ${category} basado en: ${cleanPrompt}. Empieza con un hook potente y sigue con el cuerpo del mensaje. Al final pon: 👉 Cotiza gratis aquí: ${ctaLink}`,
+                            `Eres un experto en redactar anuncios virales para redes sociales. ${context} Tu tarea es entregar el texto del anuncio LISTO PARA PEGAR. NO incluyas etiquetas como 'Hook:', 'Texto corto:', ni introducciones. Solo el texto persuasivo con emojis. Al final incluye un llamado a la acción con el enlace proporcionado.`
+                        );
+                        cost = 0.00005;
+                    } catch (geminiError) {
+                        console.error("❌ Fallaron tanto OpenAI como Gemini para generar texto de anuncio:", geminiError);
+                        throw openaiError;
+                    }
                 }
             }
         }
@@ -395,11 +451,10 @@ exports.extractLeadsFromImage = onCall({ timeoutSeconds: 120 }, async (request) 
 
 
 exports.generateLeadMessage = onCall({ timeoutSeconds: 60 }, async (request) => {
-    const { lead, objective, tone } = request.data;
+    const { lead, objective, tone, model } = request.data;
     if (!lead) return { error: "Datos del prospecto incompletos." };
 
     try {
-        const ai = getOpenAI();
         const promptText = `Actúa como un asesor de ventas premium experto (Angel Curbelo / TuPlanta.com). Redacta un mensaje directo de comunicación para el siguiente prospecto:
 
 Datos del Prospecto:
@@ -419,22 +474,48 @@ REGLAS DE ORO (CRÍTICO PARA NO SONAR COMO ROBOT):
 4. Firma de forma profesional y amigable: "Angel Curbelo - Asesor Premium (TuPlanta.com / 787-459-6147)".
 5. Nunca incluyas corchetes ni placeholders [como este], todo debe estar listo para copiar y enviar.`;
 
-        let messageText;
-        try {
-            const response = await ai.chat.completions.create({
-                model: "gpt-4o-mini",
-                messages: [{ role: "user", content: promptText }],
-                max_tokens: 500,
-                temperature: 0.7
-            });
-            messageText = response.choices[0].message.content;
-        } catch (openaiError) {
-            console.warn("⚠️ OpenAI falló al generar mensaje de lead. Intentando con Gemini...", openaiError);
+        let messageText = "";
+
+        if (model === "gemini") {
+            console.log("✍️ Generando mensaje de lead con Gemini-2.5-flash...");
             try {
                 messageText = await callGeminiText(promptText);
             } catch (geminiError) {
-                console.error("❌ Fallaron tanto OpenAI como Gemini para generar mensaje de lead:", geminiError);
-                throw openaiError;
+                console.warn("⚠️ Gemini falló al generar mensaje de lead. Intentando con OpenAI...", geminiError);
+                try {
+                    const ai = getOpenAI();
+                    const response = await ai.chat.completions.create({
+                        model: "gpt-4o-mini",
+                        messages: [{ role: "user", content: promptText }],
+                        max_tokens: 500,
+                        temperature: 0.7
+                    });
+                    messageText = response.choices[0].message.content;
+                } catch (openaiError) {
+                    console.error("❌ Fallaron tanto Gemini como OpenAI para generar mensaje de lead:", openaiError);
+                    throw geminiError;
+                }
+            }
+        } else {
+            // GPT por defecto
+            console.log("✍️ Generando mensaje de lead con GPT-4o-mini...");
+            try {
+                const ai = getOpenAI();
+                const response = await ai.chat.completions.create({
+                    model: "gpt-4o-mini",
+                    messages: [{ role: "user", content: promptText }],
+                    max_tokens: 500,
+                    temperature: 0.7
+                });
+                messageText = response.choices[0].message.content;
+            } catch (openaiError) {
+                console.warn("⚠️ OpenAI falló al generar mensaje de lead. Intentando con Gemini...", openaiError);
+                try {
+                    messageText = await callGeminiText(promptText);
+                } catch (geminiError) {
+                    console.error("❌ Fallaron tanto OpenAI como Gemini para generar mensaje de lead:", geminiError);
+                    throw openaiError;
+                }
             }
         }
 
@@ -839,7 +920,7 @@ exports.initiateOutboundVapiCall = onCall({ timeoutSeconds: 60 }, async (request
 
 // ====== NUEVO: GENERADOR CREATIVO DE ANUNCIOS CON IA ======
 exports.generateMarketingCopy = onCall({ timeoutSeconds: 120 }, async (request) => {
-    const { platform, product, angle, clientId } = request.data;
+    const { platform, product, angle, clientId, model } = request.data;
     
     if (!platform || !product || !angle) {
         return { error: "Faltan parámetros requeridos (platform, product, angle)" };
@@ -860,7 +941,7 @@ exports.generateMarketingCopy = onCall({ timeoutSeconds: 120 }, async (request) 
             return { error: "Límite de presupuesto alcanzado ($5.00). Por favor recargue.", limitReached: true };
         }
 
-        console.log(`🤖 Generando copy para plataforma: ${platform}, producto: ${product}, enfoque: ${angle}`);
+        console.log(`🤖 Generando copy para plataforma: ${platform}, producto: ${product}, enfoque: ${angle} usando modelo: ${model}`);
 
         const systemInstruction = `Eres un redactor creativo de anuncios y copywriter premium experto en marketing digital.
 Tu tarea es escribir copys persuasivos de alta conversión para la plataforma: ${platform}.
@@ -881,26 +962,53 @@ Asegúrate de no incluir texto fuera del JSON. Devuelve solo el objeto JSON.`;
         let cost = 0;
         const ai = getOpenAI();
 
-        try {
-            const response = await ai.chat.completions.create({
-                model: "gpt-4o-mini",
-                messages: [
-                    { role: "system", content: systemInstruction },
-                    { role: "user", content: userPrompt }
-                ],
-                response_format: { type: "json_object" },
-                temperature: 0.7,
-            });
-            responseText = response.choices[0].message.content;
-            cost = 0.0005; // Costo por solicitud exitosa de OpenAI para texto
-        } catch (openaiError) {
-            console.warn("⚠️ OpenAI falló al generar texto de anuncios. Intentando con Gemini...", openaiError);
+        if (model === "gemini") {
+            console.log(`🤖 Generando copy con Gemini-2.5-flash para plataforma: ${platform}...`);
             try {
                 responseText = await callGeminiText(userPrompt, systemInstruction, true);
-                cost = 0.00005; // Costo por fallback exitoso a Gemini
+                cost = 0.00005;
             } catch (geminiError) {
-                console.error("❌ Fallaron tanto OpenAI como Gemini para generar texto de anuncios:", geminiError);
-                throw openaiError;
+                console.warn("⚠️ Gemini falló al generar texto de anuncios. Intentando con OpenAI...", geminiError);
+                try {
+                    const response = await ai.chat.completions.create({
+                        model: "gpt-4o-mini",
+                        messages: [
+                            { role: "system", content: systemInstruction },
+                            { role: "user", content: userPrompt }
+                        ],
+                        response_format: { type: "json_object" },
+                        temperature: 0.7,
+                    });
+                    responseText = response.choices[0].message.content;
+                    cost = 0.0005;
+                } catch (openaiError) {
+                    console.error("❌ Fallaron tanto Gemini como OpenAI para generar texto de anuncios:", openaiError);
+                    throw geminiError;
+                }
+            }
+        } else {
+            console.log(`🤖 Generando copy con GPT-4o-mini para plataforma: ${platform}...`);
+            try {
+                const response = await ai.chat.completions.create({
+                    model: "gpt-4o-mini",
+                    messages: [
+                        { role: "system", content: systemInstruction },
+                        { role: "user", content: userPrompt }
+                    ],
+                    response_format: { type: "json_object" },
+                    temperature: 0.7,
+                });
+                responseText = response.choices[0].message.content;
+                cost = 0.0005;
+            } catch (openaiError) {
+                console.warn("⚠️ OpenAI falló al generar texto de anuncios. Intentando con Gemini...", openaiError);
+                try {
+                    responseText = await callGeminiText(userPrompt, systemInstruction, true);
+                    cost = 0.00005;
+                } catch (geminiError) {
+                    console.error("❌ Fallaron tanto OpenAI como Gemini para generar texto de anuncios:", geminiError);
+                    throw openaiError;
+                }
             }
         }
         
