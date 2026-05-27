@@ -877,7 +877,32 @@ Asegúrate de no incluir texto fuera del JSON. Devuelve solo el objeto JSON.`;
 
         const userPrompt = `Escribe 3 variaciones de anuncios para ${platform} sobre "${product}" con el enfoque de "${angle}".`;
 
-        const responseText = await callGeminiText(userPrompt, systemInstruction, true);
+        let responseText = "";
+        let cost = 0;
+        const ai = getOpenAI();
+
+        try {
+            const response = await ai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [
+                    { role: "system", content: systemInstruction },
+                    { role: "user", content: userPrompt }
+                ],
+                response_format: { type: "json_object" },
+                temperature: 0.7,
+            });
+            responseText = response.choices[0].message.content;
+            cost = 0.0005; // Costo por solicitud exitosa de OpenAI para texto
+        } catch (openaiError) {
+            console.warn("⚠️ OpenAI falló al generar texto de anuncios. Intentando con Gemini...", openaiError);
+            try {
+                responseText = await callGeminiText(userPrompt, systemInstruction, true);
+                cost = 0.00005; // Costo por fallback exitoso a Gemini
+            } catch (geminiError) {
+                console.error("❌ Fallaron tanto OpenAI como Gemini para generar texto de anuncios:", geminiError);
+                throw openaiError;
+            }
+        }
         
         let parsedResult;
         try {
@@ -885,7 +910,7 @@ Asegúrate de no incluir texto fuera del JSON. Devuelve solo el objeto JSON.`;
             const cleanText = responseText.replace(/```json\s?|```/g, "").trim();
             parsedResult = JSON.parse(cleanText);
         } catch (jsonErr) {
-            console.error("Error parseando respuesta JSON de Gemini:", responseText);
+            console.error("Error parseando respuesta JSON:", responseText);
             // Intentar recuperar con regex o devolver estructura por defecto
             parsedResult = {
                 variations: [
@@ -899,8 +924,7 @@ Asegúrate de no incluir texto fuera del JSON. Devuelve solo el objeto JSON.`;
             };
         }
 
-        // Registrar costo simbólico
-        const cost = 0.0001;
+        // Registrar costo
         const newTotal = currentSpent + cost;
         await usageRef.set({
             [targetId]: newTotal,
