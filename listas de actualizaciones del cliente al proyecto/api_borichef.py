@@ -40,7 +40,7 @@ def llenar_carrito_usuario(orden: OrdenCompra):
     print(f"📥 Petición recibida desde BoriChef App para: {orden.supermercado}")
     
     # Validación de comercios certificados en el MVP
-    if orden.supermercado.lower() not in ["pueblo", "supermax", "walmart"]:
+    if orden.supermercado.lower() not in ["pueblo", "supermax", "walmart", "ralphs", "ralph"]:
         raise HTTPException(status_code=400, detail="Supermercado no soportado en esta fase.")
         
     try:
