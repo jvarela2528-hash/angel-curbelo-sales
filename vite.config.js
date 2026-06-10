@@ -14,6 +14,7 @@ export default defineConfig({
         'zendure-standalone': resolve(__dirname, 'zendure-standalone.html'),
         reclutamiento: resolve(__dirname, 'reclutamiento.html'),
         promo: resolve(__dirname, 'promo.html'),
+        manual: resolve(__dirname, 'manual_usuario_crm.html'),
       },
     },
   },

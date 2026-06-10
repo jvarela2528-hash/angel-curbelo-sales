@@ -37,6 +37,10 @@
         "destination": "/promo.html"
       },
       {
+        "source": "/manual",
+        "destination": "/manual_usuario_crm.html"
+      },
+      {
         "source": "/reclutamiento",
         "destination": "/reclutamiento.html"
       },
