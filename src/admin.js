@@ -366,7 +366,7 @@ function renderLeads() {
             if (data.horasRespaldo) details.push(`🔋 ${data.horasRespaldo}h`);
             if (data.hasPets === 'si') details.push(`🐾 Mascotas`);
             if (data.isOwner === 'no' || data.isOwner === 'No') details.push(`🏠 Renta`);
-            if (data.recordingUrl) details.push(`🎧 <a href="${data.recordingUrl}" target="_blank" style="color:#10b981; text-decoration:underline; font-weight:bold;">Escuchar Audio</a>`);
+            if (data.recordingUrl) details.push(`🎧 <span onclick="window.playOrDownloadAudio('${data.id}', 'download')" style="color:#10b981; text-decoration:underline; font-weight:bold; cursor:pointer;" title="Descargar Grabación Vapi">Escuchar Audio</span>`);
             if (data.transcript) details.push(`<span onclick="window.openTranscriptModal('${data.id}')" style="cursor:pointer; background:rgba(0,210,255,0.15); color:#00e5ff; padding:4px 10px; border-radius:8px; border:1px solid rgba(0,210,255,0.4); font-weight:700; display:inline-flex; align-items:center; gap:6px;">📜 Ver Transcripción</span>`);
             if (data.appointment) {
                 details.push(`<span style="background:rgba(139,92,246,0.2); color:#c084fc; padding:4px 8px; border-radius:6px; font-weight:700; border:1px solid rgba(139,92,246,0.4); display:inline-block; margin-bottom:4px;">📅 Cita Agendada: ${data.appointment.date} a las ${data.appointment.time} (${data.appointment.assignedTo || 'Angel'})</span>`);
@@ -1807,8 +1807,9 @@ window.openTranscriptModal = function(leadId) {
 
     if (audioContainer && audioPlayer) {
         if (lead.recordingUrl) {
-            audioPlayer.src = lead.recordingUrl;
+            audioPlayer.src = '';
             audioContainer.style.display = 'block';
+            window.playOrDownloadAudio(lead.id, 'play');
         } else {
             audioPlayer.src = '';
             audioContainer.style.display = 'none';
@@ -2733,3 +2734,61 @@ if (usersNavItem) {
         loadUsers();
     });
 }
+
+// ====== REPRODUCCIÓN Y DESCARGA AUTENTICADA DE GRABACIONES DE VAPI ======
+window.playOrDownloadAudio = async function(leadId, type = 'play') {
+    const lead = window.leadDataCache?.[leadId];
+    if (!lead) {
+        alert("No se encontró la información del prospecto.");
+        return;
+    }
+    
+    // Intentar obtener el Call ID del lead, o extraerlo de la URL de la grabación en leads antiguos
+    const callId = lead.vapiCallId || lead.lastVapiCallId || (lead.recordingUrl ? (lead.recordingUrl.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0]) : null);
+    if (!callId) {
+        alert("No se pudo identificar el ID de la llamada Vapi para obtener la grabación.");
+        return;
+    }
+
+    try {
+        const audioPlayer = document.getElementById('transcript-audio-player');
+        const getUrlFn = httpsCallable(functions, 'getVapiRecordingUrl');
+        
+        if (type === 'play' && audioPlayer) {
+            audioPlayer.src = ''; // Limpiar previo
+            // Deshabilitar temporalmente el reproductor para indicar carga
+            audioPlayer.style.opacity = '0.5';
+        }
+        
+        const res = await getUrlFn({ callId });
+        
+        if (type === 'play' && audioPlayer) {
+            audioPlayer.style.opacity = '1';
+        }
+
+        if (res.data?.error) {
+            alert(`Error al obtener audio de Vapi: ${res.data.error}`);
+            return;
+        }
+
+        if (res.data?.url) {
+            if (type === 'play') {
+                if (audioPlayer) {
+                    audioPlayer.src = res.data.url;
+                    audioPlayer.play().catch(e => console.log("Auto-play bloqueado o interrumpido:", e));
+                }
+            } else {
+                window.open(res.data.url, '_blank');
+            }
+        } else {
+            alert("No se recibió la URL de la grabación desde el servidor.");
+        }
+    } catch (err) {
+        console.error("Error en playOrDownloadAudio:", err);
+        alert(`Error al conectar con el servidor para obtener el audio: ${err.message}`);
+        const audioPlayer = document.getElementById('transcript-audio-player');
+        if (type === 'play' && audioPlayer) {
+            audioPlayer.style.opacity = '1';
+        }
+    }
+};
